@@ -6,6 +6,7 @@ import (
 	"pr-review/internal/config"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -34,4 +35,8 @@ func New(config *config.DatabaseConfig) *Storage {
 	}
 
 	return &Storage{db}
+}
+
+func (s *Storage) BeginTx(ctx context.Context) (pgx.Tx, error) {
+	return s.db.Begin(ctx)
 }

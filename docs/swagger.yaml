@@ -1,39 +1,87 @@
-basePath: /
 definitions:
-  dto.GetTeamResponse:
+  dto.AddTeamRequest:
     properties:
       members:
         items:
-          $ref: '#/definitions/dto.Member'
+          $ref: '#/definitions/models.User'
         type: array
       team_name:
         type: string
     type: object
-  dto.Member:
+  dto.AddTeamResponse:
     properties:
-      is_active:
-        type: boolean
-      user_id:
-        type: integer
-      username:
-        type: string
+      team:
+        $ref: '#/definitions/dto.Team'
     type: object
-  dto.Response:
+  dto.ErrorResponse:
     properties:
       code:
         type: string
       message:
         type: string
     type: object
-host: localhost:8080
+  dto.GetTeamResponse:
+    properties:
+      members:
+        items:
+          $ref: '#/definitions/models.User'
+        type: array
+      team_name:
+        type: string
+    type: object
+  dto.Team:
+    properties:
+      members:
+        items:
+          $ref: '#/definitions/models.User'
+        type: array
+      team_name:
+        type: string
+    type: object
+  models.User:
+    description: Модель пользователя
+    properties:
+      is_active:
+        type: boolean
+      user_id:
+        type: string
+      username:
+        type: string
+    type: object
 info:
   contact: {}
-  title: pr-review API Docs
 paths:
+  /team/add:
+    post:
+      parameters:
+      - description: Команда
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AddTeamRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.AddTeamResponse'
+        "400":
+          description: Неверный запрос или команда с таким team_name уже существует
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Создать команду с участниками (создаёт/обновляет пользователей)
+      tags:
+      - Teams
   /team/get:
     get:
       parameters:
-      - description: "Название команды\t"
+      - description: Название команды
         in: query
         name: team_name
         required: true
@@ -48,15 +96,15 @@ paths:
         "400":
           description: Неверный запрос
           schema:
-            $ref: '#/definitions/dto.Response'
+            $ref: '#/definitions/dto.ErrorResponse'
         "404":
           description: Команда не найдена
           schema:
-            $ref: '#/definitions/dto.Response'
+            $ref: '#/definitions/dto.ErrorResponse'
         "500":
           description: Внутренняя ошибка
           schema:
-            $ref: '#/definitions/dto.Response'
+            $ref: '#/definitions/dto.ErrorResponse'
       summary: Получить команду с участниками
       tags:
       - Teams

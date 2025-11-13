@@ -1,12 +1,51 @@
 {
     "swagger": "2.0",
     "info": {
-        "title": "pr-review API Docs",
         "contact": {}
     },
-    "host": "localhost:8080",
-    "basePath": "/",
     "paths": {
+        "/team/add": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams"
+                ],
+                "summary": "Создать команду с участниками (создаёт/обновляет пользователей)",
+                "parameters": [
+                    {
+                        "description": "Команда",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AddTeamRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.AddTeamResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный запрос или команда с таким team_name уже существует",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/team/get": {
             "get": {
                 "produces": [
@@ -19,7 +58,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Название команды\t",
+                        "description": "Название команды",
                         "name": "team_name",
                         "in": "query",
                         "required": true
@@ -35,19 +74,19 @@
                     "400": {
                         "description": "Неверный запрос",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "Команда не найдена",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Внутренняя ошибка",
                         "schema": {
-                            "$ref": "#/definitions/dto.Response"
+                            "$ref": "#/definitions/dto.ErrorResponse"
                         }
                     }
                 }
@@ -55,13 +94,13 @@
         }
     },
     "definitions": {
-        "dto.GetTeamResponse": {
+        "dto.AddTeamRequest": {
             "type": "object",
             "properties": {
                 "members": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.Member"
+                        "$ref": "#/definitions/models.User"
                     }
                 },
                 "team_name": {
@@ -69,27 +108,64 @@
                 }
             }
         },
-        "dto.Member": {
+        "dto.AddTeamResponse": {
             "type": "object",
             "properties": {
-                "is_active": {
-                    "type": "boolean"
-                },
-                "user_id": {
-                    "type": "integer"
-                },
-                "username": {
-                    "type": "string"
+                "team": {
+                    "$ref": "#/definitions/dto.Team"
                 }
             }
         },
-        "dto.Response": {
+        "dto.ErrorResponse": {
             "type": "object",
             "properties": {
                 "code": {
                     "type": "string"
                 },
                 "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.GetTeamResponse": {
+            "type": "object",
+            "properties": {
+                "members": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.User"
+                    }
+                },
+                "team_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.Team": {
+            "type": "object",
+            "properties": {
+                "members": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.User"
+                    }
+                },
+                "team_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.User": {
+            "description": "Модель пользователя",
+            "type": "object",
+            "properties": {
+                "is_active": {
+                    "type": "boolean"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 }
             }

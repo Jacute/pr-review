@@ -1,8 +1,15 @@
 package handlers
 
-import "log/slog"
+import (
+	"context"
+	"log/slog"
+	"pr-review/internal/http/dto"
+	"pr-review/internal/models"
+)
 
 type Usecases interface {
+	GetTeam(ctx context.Context, name string) ([]*models.User, error)
+	CreateTeam(ctx context.Context, reqDTO *dto.AddTeamRequest) error
 }
 
 type Handlers struct {

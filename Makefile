@@ -11,4 +11,8 @@ install-swag:
 	go install github.com/swaggo/swag/cmd/swag@latest
 
 swagger:
-	swag init -g ./internal/http/server/router.go --parseDependency --parseInternal --generatedTime -o ./docs
+	swag init \
+  -d ./cmd/pr-review,./internal/http/server,./internal/http/handlers \
+  --parseDependency \
+  --parseInternal \
+  -o ./docs
