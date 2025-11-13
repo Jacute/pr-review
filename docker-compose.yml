@@ -1,0 +1,45 @@
+services:
+  db:
+    container_name: pr-review-db
+    image: postgres:17.5
+    restart: on-failure
+    env_file:
+      - deploy/.db.env
+    ports: 
+      - 127.0.0.1:15021:5432
+    volumes:
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "pr-review", "-d", "pr", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - pr-net
+
+  pr-review:
+    container_name: pr-review
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    env_file:
+      - deploy/.env
+    ports:
+      - 8080:8080
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    networks:
+      - pr-net
+
+networks:
+  pr-net:
+    driver: bridge

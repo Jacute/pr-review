@@ -1,0 +1,5 @@
+deploy
+docker-compose.yml
+volumes
+docs/docs.go
+docs/img

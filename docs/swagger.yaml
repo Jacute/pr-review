@@ -1,0 +1,63 @@
+basePath: /
+definitions:
+  dto.GetTeamResponse:
+    properties:
+      members:
+        items:
+          $ref: '#/definitions/dto.Member'
+        type: array
+      team_name:
+        type: string
+    type: object
+  dto.Member:
+    properties:
+      is_active:
+        type: boolean
+      user_id:
+        type: integer
+      username:
+        type: string
+    type: object
+  dto.Response:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  title: pr-review API Docs
+paths:
+  /team/get:
+    get:
+      parameters:
+      - description: "Название команды\t"
+        in: query
+        name: team_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GetTeamResponse'
+        "400":
+          description: Неверный запрос
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "404":
+          description: Команда не найдена
+          schema:
+            $ref: '#/definitions/dto.Response'
+        "500":
+          description: Внутренняя ошибка
+          schema:
+            $ref: '#/definitions/dto.Response'
+      summary: Получить команду с участниками
+      tags:
+      - Teams
+swagger: "2.0"
