@@ -5,6 +5,7 @@ import (
 	"pr-review/internal/http/dto"
 
 	"github.com/go-chi/render"
+	"github.com/google/uuid"
 )
 
 func (h *Handlers) UserSetIsActive() http.HandlerFunc {
@@ -43,6 +44,29 @@ func (h *Handlers) UserSetIsActive() http.HandlerFunc {
 
 func (h *Handlers) GetUserReviews() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		panic("not implemented")
+		userId := r.URL.Query().Get("user_id")
+		if userId == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			render.JSON(w, r, dto.ErrUserIdRequired)
+			return
+		}
+		if _, err := uuid.Parse(userId); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			render.JSON(w, r, dto.ErrUserIdShouldBeUuid)
+			return
+		}
+
+		reviews, err := h.uc.GetReviewers(r.Context(), userId)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			render.JSON(w, r, dto.ErrInternal)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		render.JSON(w, r, dto.GetReviewResponse{
+			UserId:       userId,
+			PullRequests: reviews,
+		})
 	}
 }

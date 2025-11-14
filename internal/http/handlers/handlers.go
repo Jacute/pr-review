@@ -10,7 +10,9 @@ import (
 type Usecases interface {
 	GetTeam(ctx context.Context, name string) ([]*models.Member, error)
 	CreateTeam(ctx context.Context, reqDTO *dto.AddTeamRequest) error
+
 	UserSetIsActive(ctx context.Context, reqDTO *dto.SetIsActiveRequest) (*models.User, error)
+	GetReviewers(ctx context.Context, userId string) ([]*models.PullRequest, error)
 }
 
 type Handlers struct {

@@ -42,3 +42,8 @@ func (r *SetIsActiveRequest) Validate() *ErrorResponse {
 type SetIsActiveResponse struct {
 	User *models.User `json:"user"`
 }
+
+type GetReviewResponse struct {
+	UserId       string                `json:"user_id"`
+	PullRequests []*models.PullRequest `json:"pull_requests"`
+}

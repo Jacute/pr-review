@@ -36,7 +36,7 @@ func main() {
 	signCh := make(chan os.Signal, 1)
 	signal.Notify(signCh, syscall.SIGTERM, syscall.SIGINT)
 
-	log.Info("starting http server")
+	log.Info("starting http server", slog.Any("config", cfg))
 	go s.Run()
 
 	sign := <-signCh

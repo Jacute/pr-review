@@ -17,7 +17,7 @@ var (
 	ErrTeamAlredyExists = errors.New("team already exists")
 )
 
-func (uc *Usecases) GetTeam(ctx context.Context, name string) ([]*models.User, error) {
+func (uc *Usecases) GetTeam(ctx context.Context, name string) ([]*models.Member, error) {
 	const op = "usecases.GetTeam"
 	log := uc.log.With(slog.String("op", op), slog.String("name", name))
 

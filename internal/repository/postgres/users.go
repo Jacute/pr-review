@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func (s *Storage) GetTeamMembers(ctx context.Context, name string) ([]*models.User, error) {
+func (s *Storage) GetTeamMembers(ctx context.Context, name string) ([]*models.Member, error) {
 	const op = "postgres.GetTeamMembers"
 
 	rows, err := s.db.Query(ctx, `SELECT id, username, is_active
@@ -22,9 +22,9 @@ func (s *Storage) GetTeamMembers(ctx context.Context, name string) ([]*models.Us
 	}
 	defer rows.Close()
 
-	var users []*models.User
+	var users []*models.Member
 	for rows.Next() {
-		var user models.User
+		var user models.Member
 		if err := rows.Scan(&user.Id, &user.Username, &user.IsActive); err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}

@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"pr-review/internal/models"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -106,4 +107,35 @@ func (s *Storage) SetNeedMoreReviewers(ctx context.Context, tx pgx.Tx, prId stri
 	}
 
 	return nil
+}
+
+func (s *Storage) GetPRsByUserId(ctx context.Context, id string) ([]*models.PullRequest, error) {
+	const op = "postgres.GetPRsByUserId"
+
+	rows, err := s.db.Query(ctx, `
+		SELECT pr.id, pr.title, pr.author_id, s.name, pr.need_more_reviewers
+		FROM pull_requests_users pru
+		JOIN pull_requests pr ON pru.pr_id = pr.id
+		JOIN statuses s ON pr.status_id = s.id
+		WHERE user_id = $1`, id)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	defer rows.Close()
+
+	var prs []*models.PullRequest
+	for rows.Next() {
+		var pr *models.PullRequest
+		if err := rows.Scan(
+			&pr.Id, &pr.Title, &pr.AuthorId, &pr.Status, &pr.NeedMoreReviewers,
+		); err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+		prs = append(prs, pr)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return prs, nil
 }
