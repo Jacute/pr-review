@@ -8,8 +8,9 @@ import (
 )
 
 type Usecases interface {
-	GetTeam(ctx context.Context, name string) ([]*models.User, error)
+	GetTeam(ctx context.Context, name string) ([]*models.Member, error)
 	CreateTeam(ctx context.Context, reqDTO *dto.AddTeamRequest) error
+	UserSetIsActive(ctx context.Context, reqDTO *dto.SetIsActiveRequest) (*models.User, error)
 }
 
 type Handlers struct {

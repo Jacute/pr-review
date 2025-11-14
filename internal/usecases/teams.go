@@ -76,7 +76,7 @@ func (uc *Usecases) CreateTeam(ctx context.Context, reqDTO *dto.AddTeamRequest) 
 	}()
 
 	// создаём команду
-	err = uc.db.CreateTeam(ctx, tx, team, reqDTO.Members)
+	err = uc.db.CreateTeam(ctx, tx, team)
 	if err != nil {
 		if errors.Is(err, postgres.ErrTeamAlredyExists) {
 			log.Warn("team already exists")

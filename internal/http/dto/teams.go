@@ -10,14 +10,29 @@ var (
 	ErrCodeTeamExists ErrorCode = "TEAM_EXISTS"
 )
 
+var (
+	ErrTeamAlreadyExists = Error(
+		ErrCodeTeamExists,
+		"team already exists",
+	)
+	ErrTeamNameRequired = Error(
+		ErrCodeBadRequest,
+		"team_name is required",
+	)
+	ErrTeamNotFound = Error(
+		ErrCodeNotFound,
+		"team not found",
+	)
+)
+
 type GetTeamResponse struct {
-	Name    string         `json:"team_name"`
-	Members []*models.User `json:"members"`
+	Name    string           `json:"team_name"`
+	Members []*models.Member `json:"members"`
 }
 
 type AddTeamRequest struct {
-	Name    string         `json:"team_name"`
-	Members []*models.User `json:"members"`
+	Name    string           `json:"team_name"`
+	Members []*models.Member `json:"members"`
 }
 
 func (r *AddTeamRequest) Validate() *ErrorResponse {
@@ -69,8 +84,8 @@ func (r *AddTeamRequest) Validate() *ErrorResponse {
 }
 
 type Team struct {
-	Name    string         `json:"team_name"`
-	Members []*models.User `json:"members"`
+	Name    string           `json:"team_name"`
+	Members []*models.Member `json:"members"`
 }
 
 type AddTeamResponse struct {

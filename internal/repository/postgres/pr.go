@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+// UnassignPRsFromUser удаляет ассайни на юзера со всех PR
 func (s *Storage) UnassignPRsFromUser(ctx context.Context, tx pgx.Tx, userId string) ([]string, error) {
 	const op = "postgres.UnassignPRsFromUser"
 
@@ -36,6 +37,7 @@ func (s *Storage) UnassignPRsFromUser(ctx context.Context, tx pgx.Tx, userId str
 	return prIDs, nil
 }
 
+// GetTeammates возвращает идентификаторы пользователей из команды пользователя oldPRUserId, исключая при этом oldPRUserId и authorId PR'а
 func (s *Storage) GetTeammates(ctx context.Context, tx pgx.Tx, prId string, oldPRUserId string) ([]string, error) {
 	const op = "postgres.AssignPRToUser"
 
@@ -72,6 +74,7 @@ func (s *Storage) GetTeammates(ctx context.Context, tx pgx.Tx, prId string, oldP
 	return teammates, nil
 }
 
+// AssignPRToUser ассайнит первого пользователя из userIds на PR
 func (s *Storage) AssignPRToUser(ctx context.Context, tx pgx.Tx, prId string, userIds []string) (string, error) {
 	const op = "postgres.AssignPRToUser"
 
@@ -93,6 +96,7 @@ func (s *Storage) AssignPRToUser(ctx context.Context, tx pgx.Tx, prId string, us
 	return id, nil
 }
 
+// SetNeedMoreReviewers устанавливает PR'у флаг need_more_reviewers = true
 func (s *Storage) SetNeedMoreReviewers(ctx context.Context, tx pgx.Tx, prId string) error {
 	const op = "postgres.SetNeedMoreReviewers"
 

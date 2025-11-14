@@ -22,20 +22,14 @@ func (h *Handlers) AddTeam() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Type") != "application/json" {
 			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, dto.Error(
-				dto.ErrCodeBadRequest,
-				"Content-Type must be application/json",
-			))
+			render.JSON(w, r, dto.ErrContentTypeNotJson)
 			return
 		}
 
 		var req dto.AddTeamRequest
 		if err := render.DecodeJSON(r.Body, &req); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, dto.Error(
-				dto.ErrCodeBadRequest,
-				err.Error(),
-			))
+			render.JSON(w, r, dto.ErrInvalidBody)
 			return
 		}
 		if err := req.Validate(); err != nil {
@@ -48,17 +42,11 @@ func (h *Handlers) AddTeam() http.HandlerFunc {
 		if err != nil {
 			if errors.Is(err, usecases.ErrTeamAlredyExists) {
 				w.WriteHeader(http.StatusBadRequest)
-				render.JSON(w, r, dto.Error(
-					dto.ErrCodeBadRequest,
-					err.Error(),
-				))
+				render.JSON(w, r, dto.ErrTeamAlreadyExists)
 				return
 			}
 			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, dto.Error(
-				dto.ErrCodeInternal,
-				"internal error",
-			))
+			render.JSON(w, r, dto.ErrInternal)
 			return
 		}
 
@@ -87,27 +75,18 @@ func (h *Handlers) GetTeam() http.HandlerFunc {
 		teamName := r.URL.Query().Get("team_name")
 		if teamName == "" {
 			w.WriteHeader(http.StatusBadRequest)
-			render.JSON(w, r, dto.Error(
-				dto.ErrCodeBadRequest,
-				"team_name is required",
-			))
+			render.JSON(w, r, dto.ErrTeamNameRequired)
 			return
 		}
 		members, err := h.uc.GetTeam(r.Context(), teamName)
 		if err != nil {
 			if errors.Is(err, usecases.ErrTeamNotFound) {
 				w.WriteHeader(http.StatusNotFound)
-				render.JSON(w, r, dto.Error(
-					dto.ErrCodeNotFound,
-					"team not found",
-				))
+				render.JSON(w, r, dto.ErrTeamNotFound)
 				return
 			}
 			w.WriteHeader(http.StatusInternalServerError)
-			render.JSON(w, r, dto.Error(
-				dto.ErrCodeInternal,
-				"internal error",
-			))
+			render.JSON(w, r, dto.ErrInternal)
 			return
 		}
 

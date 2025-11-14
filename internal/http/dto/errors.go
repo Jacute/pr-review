@@ -6,6 +6,21 @@ var (
 	ErrCodeInternal   ErrorCode = "INTERNAL_ERROR"
 )
 
+var (
+	ErrContentTypeNotJson = Error(
+		ErrCodeBadRequest,
+		"Content-Type must be application/json",
+	)
+	ErrInvalidBody = Error(
+		ErrCodeBadRequest,
+		"invalid body",
+	)
+	ErrInternal = Error(
+		ErrCodeInternal,
+		"internal error",
+	)
+)
+
 type ErrorCode string
 
 type ErrorResponse struct {
