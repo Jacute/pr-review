@@ -8,10 +8,12 @@ import (
 	"pr-review/internal/models"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 var (
 	ErrUserNotFound = errors.New("user not found")
+	ErrUserExists   = errors.New("one or more users with this usernames already exists")
 )
 
 func (s *Storage) GetTeamMembers(ctx context.Context, name string) ([]*models.Member, error) {
@@ -43,19 +45,29 @@ func (s *Storage) GetTeamMembers(ctx context.Context, name string) ([]*models.Me
 }
 
 func (s *Storage) AddOrUpdateTeamMembers(ctx context.Context, tx pgx.Tx, teamId string, members []*models.Member) error {
-	const op = "postgres.AddTeamMembers"
+	const op = "postgres.AddOrUpdateTeamMembers"
 
 	for _, member := range members {
-		_, err := tx.Exec(ctx, `
-			INSERT INTO users (id, username, team_id, is_active)
-			VALUES ($1, $2, $3, $4)
-			ON CONFLICT (id) DO UPDATE
-			SET username = EXCLUDED.username,
-				team_id = EXCLUDED.team_id,
-				is_active = EXCLUDED.is_active
-		`, member.Id, member.Username, teamId, member.IsActive)
-
+		var count int
+		err := tx.QueryRow(ctx, "SELECT COUNT(*) FROM users WHERE id = $1", member.Id).Scan(&count)
 		if err != nil {
+			return fmt.Errorf("%s: %w", op, err)
+		}
+		if count == 0 {
+			_, err = tx.Exec(ctx, `
+				INSERT INTO users (id, username, team_id, is_active)
+				VALUES ($1, $2, $3, $4)
+			`, member.Id, member.Username, teamId, member.IsActive)
+		} else {
+			_, err = tx.Exec(ctx, `
+				UPDATE users SET username = $2, team_id = $3, is_active = $4
+				WHERE id = $1
+			`, member.Id, member.Username, teamId, member.IsActive)
+		}
+		if err != nil {
+			if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
+				return fmt.Errorf("%s: %w", op, ErrUserExists)
+			}
 			return fmt.Errorf("%s: %w", op, err)
 		}
 	}

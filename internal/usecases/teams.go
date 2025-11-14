@@ -14,7 +14,8 @@ import (
 
 var (
 	ErrTeamNotFound     = errors.New("team not found")
-	ErrTeamAlredyExists = errors.New("team already exists")
+	ErrTeamAlredyExists = errors.New("team_name already exists")
+	ErrUserExists       = errors.New("one or more users with this usernames already exists")
 )
 
 func (uc *Usecases) GetTeam(ctx context.Context, name string) ([]*models.Member, error) {
@@ -89,6 +90,10 @@ func (uc *Usecases) CreateTeam(ctx context.Context, reqDTO *dto.AddTeamRequest) 
 	// добавляем/обновляем участников
 	err = uc.db.AddOrUpdateTeamMembers(ctx, tx, teamId, reqDTO.Members)
 	if err != nil {
+		if errors.Is(err, postgres.ErrUserExists) {
+			log.Warn("one of users with this username already exists")
+			return ErrUserExists
+		}
 		log.Error("error adding team members", slog.String("error", err.Error()))
 		return err
 	}
@@ -106,16 +111,16 @@ func (uc *Usecases) CreateTeam(ctx context.Context, reqDTO *dto.AddTeamRequest) 
 		}
 
 		for _, prId := range prIds {
-			teammates, err := uc.db.GetTeammates(ctx, tx, prId, teamId)
+			members, err := uc.db.GetMembers(ctx, tx, prId, member.Id) // без author_id и oldPrUserId
 			if err != nil {
 				log.Error("error updating user team", slog.String("error", err.Error()))
 				return err
 			}
 
-			// перемешаем teammates, чтобы назначать assignee в случайном порядке
-			utils.Shuffle(teammates)
+			// перемешаем members, чтобы назначать assignee в случайном порядке
+			utils.Shuffle(members)
 
-			newAssignerId, err := uc.db.AssignPRToUser(ctx, tx, prId, teammates)
+			newAssignerId, err := uc.db.AssignPRToUser(ctx, tx, prId, members)
 			if err != nil {
 				log.Error("error updating user team", slog.String("error", err.Error()))
 				return err

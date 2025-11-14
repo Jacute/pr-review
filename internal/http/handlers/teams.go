@@ -42,7 +42,7 @@ func (h *Handlers) AddTeam() http.HandlerFunc {
 		if err != nil {
 			if errors.Is(err, usecases.ErrTeamAlredyExists) {
 				w.WriteHeader(http.StatusBadRequest)
-				render.JSON(w, r, dto.ErrTeamAlreadyExists)
+				render.JSON(w, r, dto.Error(dto.ErrCodeTeamExists, err.Error()))
 				return
 			}
 			w.WriteHeader(http.StatusInternalServerError)
@@ -82,7 +82,7 @@ func (h *Handlers) GetTeam() http.HandlerFunc {
 		if err != nil {
 			if errors.Is(err, usecases.ErrTeamNotFound) {
 				w.WriteHeader(http.StatusNotFound)
-				render.JSON(w, r, dto.ErrTeamNotFound)
+				render.JSON(w, r, dto.Error(dto.ErrCodeBadRequest, err.Error()))
 				return
 			}
 			w.WriteHeader(http.StatusInternalServerError)

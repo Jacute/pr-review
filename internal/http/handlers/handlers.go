@@ -13,6 +13,8 @@ type Usecases interface {
 
 	UserSetIsActive(ctx context.Context, reqDTO *dto.SetIsActiveRequest) (*models.User, error)
 	GetReviewers(ctx context.Context, userId string) ([]*models.PullRequest, error)
+
+	CreatePR(ctx context.Context, reqDTO *dto.CreatePRRequest) error
 }
 
 type Handlers struct {

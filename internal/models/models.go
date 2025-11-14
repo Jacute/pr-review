@@ -25,10 +25,19 @@ type Member struct {
 	IsActive bool   `json:"is_active"`
 }
 
-type PullRequest struct {
+type PullRequestShort struct {
 	Id                string `json:"pull_request_id"`
 	Title             string `json:"pull_request_name"`
 	AuthorId          string `json:"author_id"`
 	Status            Status `json:"status"`
 	NeedMoreReviewers bool   `json:"-"`
+}
+
+type PullRequest struct {
+	Id                string   `json:"pull_request_id"`
+	Title             string   `json:"pull_request_name"`
+	AuthorId          string   `json:"author_id"`
+	Status            Status   `json:"status"`
+	NeedMoreReviewers bool     `json:"-"`
+	Reviewers         []string `json:"assigned_reviewers"`
 }

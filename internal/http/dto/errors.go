@@ -24,13 +24,19 @@ var (
 type ErrorCode string
 
 type ErrorResponse struct {
+	Error *ErrorField `json:"error"`
+}
+
+type ErrorField struct {
 	Message string    `json:"message"`
 	Code    ErrorCode `json:"code"`
 }
 
 func Error(code ErrorCode, msg string) *ErrorResponse {
 	return &ErrorResponse{
-		Code:    code,
-		Message: msg,
+		Error: &ErrorField{
+			Code:    code,
+			Message: msg,
+		},
 	}
 }

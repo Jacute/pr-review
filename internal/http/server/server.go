@@ -39,9 +39,14 @@ func New(log *slog.Logger, cfg *config.ApplicationConfig, h Handlers, m Middlewa
 		IdleTimeout:  cfg.IdleTimeout,
 	}
 	return &HTTPServer{
+		log:    log,
 		cfg:    cfg,
 		server: srv,
 	}
+}
+
+func (s *HTTPServer) TestReq(req *http.Request, res http.ResponseWriter) {
+	s.server.Handler.ServeHTTP(res, req)
 }
 
 func (a *HTTPServer) Run() {
@@ -63,7 +68,7 @@ func (a *HTTPServer) Stop() {
 		log.Error("failed to graceful shutdown http server, trying hard close", slog.String("error", err.Error()))
 		err = a.server.Close()
 		if err != nil {
-			log.Error("failed to hard close server", err)
+			log.Error("failed to hard close server", slog.String("error", err.Error()))
 		}
 	}
 }
