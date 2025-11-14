@@ -2,11 +2,11 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"pr-review/internal/models"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // UnassignPRsFromUser удаляет ассайни на юзера со всех PR
@@ -85,7 +85,7 @@ func (s *Storage) AssignPRToUser(ctx context.Context, tx pgx.Tx, prId string, us
 			INSERT INTO pull_requests (pr_id, user_id)
 			VALUES ($1, $2) RETURNING id
 		`, prId, userId).Scan(&id)
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			continue
 		}
 		if err != nil {

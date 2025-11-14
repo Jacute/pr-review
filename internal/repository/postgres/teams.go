@@ -7,7 +7,6 @@ import (
 	"pr-review/internal/models"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 )
 
 var (
@@ -35,7 +34,7 @@ func (s *Storage) CreateTeam(ctx context.Context, tx pgx.Tx, team *models.Team) 
 
 	_, err := tx.Exec(ctx, `INSERT INTO teams (id, name) VALUES ($1, $2)`, team.Id, team.Name)
 	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return fmt.Errorf("%s: %w", op, ErrTeamAlredyExists)
 		}
 		return fmt.Errorf("%s: %w", op, err)

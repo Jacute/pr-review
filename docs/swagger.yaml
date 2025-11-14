@@ -3,7 +3,7 @@ definitions:
     properties:
       members:
         items:
-          $ref: '#/definitions/models.User'
+          $ref: '#/definitions/models.Member'
         type: array
       team_name:
         type: string
@@ -20,29 +20,71 @@ definitions:
       message:
         type: string
     type: object
+  dto.GetReviewResponse:
+    properties:
+      pull_requests:
+        items:
+          $ref: '#/definitions/models.PullRequest'
+        type: array
+      user_id:
+        type: string
+    type: object
   dto.GetTeamResponse:
     properties:
       members:
         items:
-          $ref: '#/definitions/models.User'
+          $ref: '#/definitions/models.Member'
         type: array
       team_name:
         type: string
+    type: object
+  dto.SetIsActiveRequest:
+    properties:
+      is_active:
+        type: boolean
+      user_id:
+        type: string
+    type: object
+  dto.SetIsActiveResponse:
+    properties:
+      user:
+        $ref: '#/definitions/models.User'
     type: object
   dto.Team:
     properties:
       members:
         items:
-          $ref: '#/definitions/models.User'
+          $ref: '#/definitions/models.Member'
         type: array
       team_name:
         type: string
     type: object
-  models.User:
-    description: Модель пользователя
+  models.Member:
     properties:
       is_active:
         type: boolean
+      user_id:
+        type: string
+      username:
+        type: string
+    type: object
+  models.PullRequest:
+    properties:
+      author_id:
+        type: string
+      pull_request_id:
+        type: string
+      pull_request_name:
+        type: string
+      status:
+        type: string
+    type: object
+  models.User:
+    properties:
+      is_active:
+        type: boolean
+      team_name:
+        type: string
       user_id:
         type: string
       username:
@@ -108,4 +150,65 @@ paths:
       summary: Получить команду с участниками
       tags:
       - Teams
+  /users/getReview:
+    get:
+      parameters:
+      - description: Идентификатор пользователя
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GetReviewResponse'
+        "400":
+          description: Неверный запрос
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Получить PR'ы, где пользователь назначен ревьювером
+      tags:
+      - Users
+  /users/setIsActive:
+    post:
+      parameters:
+      - description: Установка пользователя активным/неактивным
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SetIsActiveRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SetIsActiveResponse'
+        "400":
+          description: Неверный запрос
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Установить флаг активности пользователя
+      tags:
+      - Users
 swagger: "2.0"

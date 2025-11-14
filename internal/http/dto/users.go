@@ -19,6 +19,10 @@ var (
 		ErrCodeBadRequest,
 		"is_active is required",
 	)
+	ErrUserNotFound = Error(
+		ErrCodeNotFound,
+		"user not found",
+	)
 )
 
 type SetIsActiveRequest struct {

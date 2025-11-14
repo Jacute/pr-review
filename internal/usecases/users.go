@@ -2,9 +2,15 @@ package usecases
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"pr-review/internal/http/dto"
 	"pr-review/internal/models"
+	"pr-review/internal/repository/postgres"
+)
+
+var (
+	ErrUserNotFound = errors.New("user not found")
 )
 
 func (uc *Usecases) UserSetIsActive(ctx context.Context, reqDTO *dto.SetIsActiveRequest) (*models.User, error) {
@@ -13,6 +19,10 @@ func (uc *Usecases) UserSetIsActive(ctx context.Context, reqDTO *dto.SetIsActive
 
 	err := uc.db.UserSetIsActive(ctx, reqDTO)
 	if err != nil {
+		if errors.Is(err, postgres.ErrUserNotFound) {
+			log.Error("user not found", slog.String("user_id", reqDTO.UserId))
+			return nil, ErrUserNotFound
+		}
 		log.Error("error setting isActive", slog.String("error", err.Error()))
 		return nil, err
 	}
@@ -34,6 +44,10 @@ func (uc *Usecases) GetReviewers(ctx context.Context, userId string) ([]*models.
 
 	reviewers, err := uc.db.GetPRsByUserId(ctx, userId)
 	if err != nil {
+		if errors.Is(err, postgres.ErrUserNotFound) {
+			log.Error("user not found", slog.String("user_id", userId))
+			return nil, ErrUserNotFound
+		}
 		log.Error("error getting reviewers by user id", slog.String("error", err.Error()))
 		return nil, err
 	}

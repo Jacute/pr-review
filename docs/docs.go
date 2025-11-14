@@ -102,6 +102,100 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/users/getReview": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Получить PR'ы, где пользователь назначен ревьювером",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Идентификатор пользователя",
+                        "name": "user_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.GetReviewResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный запрос",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/setIsActive": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Установить флаг активности пользователя",
+                "parameters": [
+                    {
+                        "description": "Установка пользователя активным/неактивным",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.SetIsActiveRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.SetIsActiveResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный запрос",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -111,7 +205,7 @@ const docTemplate = `{
                 "members": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.User"
+                        "$ref": "#/definitions/models.Member"
                     }
                 },
                 "team_name": {
@@ -138,17 +232,50 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.GetReviewResponse": {
+            "type": "object",
+            "properties": {
+                "pull_requests": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.PullRequest"
+                    }
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.GetTeamResponse": {
             "type": "object",
             "properties": {
                 "members": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.User"
+                        "$ref": "#/definitions/models.Member"
                     }
                 },
                 "team_name": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.SetIsActiveRequest": {
+            "type": "object",
+            "properties": {
+                "is_active": {
+                    "type": "boolean"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.SetIsActiveResponse": {
+            "type": "object",
+            "properties": {
+                "user": {
+                    "$ref": "#/definitions/models.User"
                 }
             }
         },
@@ -158,7 +285,7 @@ const docTemplate = `{
                 "members": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.User"
+                        "$ref": "#/definitions/models.Member"
                     }
                 },
                 "team_name": {
@@ -166,12 +293,45 @@ const docTemplate = `{
                 }
             }
         },
-        "models.User": {
-            "description": "Модель пользователя",
+        "models.Member": {
             "type": "object",
             "properties": {
                 "is_active": {
                     "type": "boolean"
+                },
+                "user_id": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.PullRequest": {
+            "type": "object",
+            "properties": {
+                "author_id": {
+                    "type": "string"
+                },
+                "pull_request_id": {
+                    "type": "string"
+                },
+                "pull_request_name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.User": {
+            "type": "object",
+            "properties": {
+                "is_active": {
+                    "type": "boolean"
+                },
+                "team_name": {
+                    "type": "string"
                 },
                 "user_id": {
                     "type": "string"
