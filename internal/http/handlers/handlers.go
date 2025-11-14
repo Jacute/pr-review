@@ -16,6 +16,7 @@ type Usecases interface {
 
 	CreatePR(ctx context.Context, reqDTO *dto.CreatePRRequest) (*models.PullRequest, error)
 	MergePR(ctx context.Context, prId string) (*models.PullRequest, error)
+	ReassignPR(ctx context.Context, reqDTO *dto.ReassignPRRequest) (*models.PullRequest, string, error)
 }
 
 type Handlers struct {

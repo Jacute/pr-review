@@ -27,6 +27,14 @@ var (
 		ErrCodeBadRequest,
 		"author_id should be uuid",
 	)
+	ErrOldReviewerIdRequired = Error(
+		ErrCodeBadRequest,
+		"old_reviewer_id is required",
+	)
+	ErrOldReviewerIdShouldBeUuid = Error(
+		ErrCodeBadRequest,
+		"old_reviewer_id should be uuid",
+	)
 )
 
 var (
@@ -78,4 +86,30 @@ func (r *MergePRRequest) Validate() *ErrorResponse {
 
 type MergePRResponse struct {
 	PR *models.PullRequest `json:"pr"`
+}
+
+type ReassignPRRequest struct {
+	PullRequestID string `json:"pull_request_id"`
+	OldReviewerID string `json:"old_reviewer_id"`
+}
+
+func (r *ReassignPRRequest) Validate() *ErrorResponse {
+	if r.PullRequestID == "" {
+		return ErrPRIdRequired
+	}
+	if _, err := uuid.Parse(r.PullRequestID); err != nil {
+		return ErrPRIdShouldBeUuid
+	}
+	if r.OldReviewerID == "" {
+		return ErrOldReviewerIdRequired
+	}
+	if _, err := uuid.Parse(r.OldReviewerID); err != nil {
+		return ErrOldReviewerIdShouldBeUuid
+	}
+	return nil
+}
+
+type ReassignPRResponse struct {
+	PR         *models.PullRequest `json:"pr"`
+	ReplacedBy string              `json:"replaced_by"`
 }

@@ -17,8 +17,8 @@ import (
 // @Failure 404 {object} dto.ErrorResponse "Автор не найден"
 // @Failure 409 {object} dto.ErrorResponse "PR уже существует"
 // @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка"
-// @Router /team/add [post]
-// @Tags Teams
+// @Router /pullRequest/create [post]
+// @Tags PullRequests
 func (h *Handlers) CreatePR() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Type") != "application/json" {
@@ -63,6 +63,15 @@ func (h *Handlers) CreatePR() http.HandlerFunc {
 	}
 }
 
+// MergePR godoc
+// @Summary Пометить PR как MERGED (идемпотентная операция)
+// @Param request body dto.MergePRRequest true "PR id"
+// @Produce json
+// @Success 200 {object} dto.MergePRResponse "PR в состоянии MERGED"
+// @Failure 404 {object} dto.ErrorResponse "PR не найден"
+// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка"
+// @Router /pullRequest/merge [post]
+// @Tags PullRequests
 func (h *Handlers) MergePR() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Content-Type") != "application/json" {
@@ -102,8 +111,49 @@ func (h *Handlers) MergePR() http.HandlerFunc {
 	}
 }
 
+// ReassignPR godoc
+// @Summary Переназначить конкретного ревьювера на другого из его команды
+// @Param request body dto.ReassignPRRequest true "PR id & old reviewer id"
+// @Produce json
+// @Success 200 {object} dto.ReassignPRResponse
+// @Failure 404 {object} dto.ErrorResponse "PR или пользователь не найден"
+// @Failure 409 {object} dto.ErrorResponse "Нельзя менять после MERGED"
+// @Failure 409 {object} dto.ErrorResponse "Пользователь не был назначен ревьювером"
+// @Failure 409 {object} dto.ErrorResponse "Нет доступных кандидатов"
+// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка"
+// @Router /pullRequest/reassign [post]
+// @Tags PullRequests
 func (h *Handlers) ReassignPR() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		panic("not implemented")
+		if r.Header.Get("Content-Type") != "application/json" {
+			w.WriteHeader(http.StatusBadRequest)
+			render.JSON(w, r, dto.ErrContentTypeNotJson)
+			return
+		}
+
+		var req dto.ReassignPRRequest
+		if err := render.DecodeJSON(r.Body, &req); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			render.JSON(w, r, dto.ErrInvalidBody)
+			return
+		}
+
+		pr, replacedBy, err := h.uc.ReassignPR(r.Context(), &req)
+		if err != nil {
+			if errors.Is(err, usecases.ErrPRNotFound) || errors.Is(err, usecases.ErrUserNotFound) {
+				w.WriteHeader(http.StatusBadRequest)
+				render.JSON(w, r, dto.Error(dto.ErrCodeNotFound, err.Error()))
+				return
+			}
+			w.WriteHeader(http.StatusInternalServerError)
+			render.JSON(w, r, dto.ErrInternal)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		render.JSON(w, r, dto.ReassignPRResponse{
+			PR:         pr,
+			ReplacedBy: replacedBy,
+		})
 	}
 }

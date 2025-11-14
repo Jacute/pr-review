@@ -157,3 +157,14 @@ func (uc *Usecases) MergePR(ctx context.Context, prId string) (*models.PullReque
 	log.Debug("PR merged successfully")
 	return pr, nil
 }
+
+func (uc *Usecases) ReassignPR(ctx context.Context, reqDTO *dto.ReassignPRRequest) (*models.PullRequest, string, error) {
+	const op = "usecases.ReassignPR"
+	log := uc.log.With(slog.String("op", op), slog.String("pr_id", reqDTO.PullRequestID), slog.String("old_reviewer_id", reqDTO.OldReviewerID))
+
+	// ...
+
+	log.Debug("pr reassigned successfully")
+
+	return nil, "", nil
+}
