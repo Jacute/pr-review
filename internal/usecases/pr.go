@@ -11,7 +11,8 @@ import (
 )
 
 var (
-	ErrPRNotFound = errors.New("resource not found")
+	ErrPRNotFound      = errors.New("resource not found")
+	ErrPRAlreadyExists = errors.New("PR id already exists")
 )
 
 const maxReviewersPerPR = 2
@@ -56,6 +57,10 @@ func (uc *Usecases) CreatePR(ctx context.Context, reqDTO *dto.CreatePRRequest) (
 		NeedMoreReviewers: true,
 	})
 	if err != nil {
+		if errors.Is(err, postgres.ErrPRAlreadyExists) {
+			log.Warn("PR already exists")
+			return nil, ErrPRAlreadyExists
+		}
 		log.Error("error creating PR", slog.String("error", err.Error()))
 		return nil, err
 	}

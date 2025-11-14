@@ -29,6 +29,10 @@ var (
 	)
 )
 
+var (
+	ErrCodePRExists ErrorCode = "PR_EXISTS"
+)
+
 type CreatePRRequest struct {
 	Id       string `json:"pull_request_id"`
 	Title    string `json:"pull_request_name"`

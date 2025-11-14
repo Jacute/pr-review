@@ -8,10 +8,12 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 var (
-	ErrPRNotFound = errors.New("pull request not found")
+	ErrPRNotFound      = errors.New("pull request not found")
+	ErrPRAlreadyExists = errors.New("pull request already exists")
 )
 
 // UnassignPRsFromUser удаляет ассайни на юзера со всех открытых PR
@@ -111,9 +113,13 @@ func (s *Storage) AssignPRToUser(ctx context.Context, tx pgx.Tx, prId string, me
 func (s *Storage) SetNeedMoreReviewers(ctx context.Context, tx pgx.Tx, prId string) error {
 	const op = "postgres.SetNeedMoreReviewers"
 
-	_, err := tx.Exec(ctx, `UPDATE pull_requests SET need_more_reviewers = true WHERE id = $1`, prId)
+	cmd, err := tx.Exec(ctx, `UPDATE pull_requests SET need_more_reviewers = true WHERE id = $1`, prId)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	if cmd.RowsAffected() == 0 {
+		return fmt.Errorf("%s: %w", op, ErrPRNotFound)
 	}
 
 	return nil
@@ -158,6 +164,9 @@ func (s *Storage) CreatePR(ctx context.Context, tx pgx.Tx, pr *models.PullReques
 		VALUES ($1, $2, $3, (SELECT id FROM statuses WHERE name = $4), $5)
 	`, pr.Id, pr.Title, pr.AuthorId, pr.Status, pr.NeedMoreReviewers)
 	if err != nil {
+		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
+			return fmt.Errorf("%s: %w", op, ErrPRAlreadyExists)
+		}
 		return fmt.Errorf("%s: %w", op, err)
 	}
 

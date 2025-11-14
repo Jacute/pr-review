@@ -129,6 +129,10 @@ func (uc *Usecases) CreateTeam(ctx context.Context, reqDTO *dto.AddTeamRequest) 
 			if newAssignerId == "" { // новый аппрувер для PR'а не был найден, выставляем need_more_reviewers = true
 				err = uc.db.SetNeedMoreReviewers(ctx, tx, prId)
 				if err != nil {
+					if errors.Is(err, postgres.ErrPRNotFound) {
+						log.Warn("PR not found setting need_more_reviewers")
+						return ErrPRNotFound
+					}
 					log.Error("error updating user team", slog.String("error", err.Error()))
 					return err
 				}
