@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type Status string
 
 var (
@@ -34,10 +36,7 @@ type PullRequestShort struct {
 }
 
 type PullRequest struct {
-	Id                string   `json:"pull_request_id"`
-	Title             string   `json:"pull_request_name"`
-	AuthorId          string   `json:"author_id"`
-	Status            Status   `json:"status"`
-	NeedMoreReviewers bool     `json:"-"`
-	Reviewers         []string `json:"assigned_reviewers"`
+	PullRequestShort
+	Reviewers []string  `json:"assigned_reviewers"`
+	MergedAt  time.Time `json:"merged_at"`
 }

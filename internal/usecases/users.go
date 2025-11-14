@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	ErrUserNotFound = errors.New("user not found")
+	ErrUserNotFound = errors.New("resourse not found")
 )
 
 func (uc *Usecases) UserSetIsActive(ctx context.Context, reqDTO *dto.SetIsActiveRequest) (*models.User, error) {

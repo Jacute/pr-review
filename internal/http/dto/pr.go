@@ -1,6 +1,10 @@
 package dto
 
-import "github.com/google/uuid"
+import (
+	"pr-review/internal/models"
+
+	"github.com/google/uuid"
+)
 
 var (
 	ErrPRIdRequired = Error(
@@ -51,5 +55,23 @@ func (r *CreatePRRequest) Validate() *ErrorResponse {
 }
 
 type CreatePRResponse struct {
+	PR *models.PullRequest `json:"pr"`
+}
+
+type MergePRRequest struct {
 	PullRequestID string `json:"pull_request_id"`
+}
+
+func (r *MergePRRequest) Validate() *ErrorResponse {
+	if r.PullRequestID == "" {
+		return ErrPRIdRequired
+	}
+	if _, err := uuid.Parse(r.PullRequestID); err != nil {
+		return ErrPRIdShouldBeUuid
+	}
+	return nil
+}
+
+type MergePRResponse struct {
+	PR *models.PullRequest `json:"pr"`
 }

@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS pull_requests (
     title VARCHAR(256) NOT NULL,
     author_id UUID NOT NULL,
     status_id INT NOT NULL REFERENCES statuses(id),
-    need_more_reviewers BOOLEAN NOT NULL
+    need_more_reviewers BOOLEAN NOT NULL,
+    merged_at TIMESTAMPTZ
 );
 
 CREATE TABLE IF NOT EXISTS pull_requests_users (

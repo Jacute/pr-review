@@ -14,13 +14,18 @@ var (
 	ErrPRNotFound = errors.New("pull request not found")
 )
 
-// UnassignPRsFromUser удаляет ассайни на юзера со всех PR
+// UnassignPRsFromUser удаляет ассайни на юзера со всех открытых PR
 func (s *Storage) UnassignPRsFromUser(ctx context.Context, tx pgx.Tx, userId string) ([]string, error) {
 	const op = "postgres.UnassignPRsFromUser"
 
 	rows, err := tx.Query(ctx, `
-		DELETE FROM pull_requests_users
-		WHERE user_id = $1
+		DELETE FROM pull_requests_users pru
+		WHERE pru.user_id = $1 AND
+		(
+			SELECT s.name FROM pull_requests pr
+			JOIN statuses s ON pr.status_id = s.id
+			WHERE pr.id = pru.pr_id
+		) = 'OPEN'
 		RETURNING pr_id
 	`, userId)
 	if err != nil {
@@ -191,4 +196,69 @@ func (s *Storage) UpdatePR(ctx context.Context, tx pgx.Tx, pr *models.PullReques
 	}
 
 	return nil
+}
+
+func (s *Storage) MergePR(ctx context.Context, tx pgx.Tx, id string) error {
+	const op = "postgres.MergePR"
+
+	cmd, err := tx.Exec(ctx, "UPDATE pull_requests SET status_id = (SELECT id FROM statuses WHERE name = 'MERGED'), merged_at = NOW()")
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	if cmd.RowsAffected() == 0 {
+		return fmt.Errorf("%s: %w", op, ErrPRNotFound)
+	}
+
+	return nil
+}
+
+func (s *Storage) GetPRById(ctx context.Context, tx pgx.Tx, id string) (*models.PullRequest, error) {
+	const op = "postgres.GetPRById"
+
+	var pr models.PullRequest
+
+	err := tx.QueryRow(ctx, `
+		SELECT pr.id, pr.title, pr.author_id, s.name, pr.need_more_reviewers
+		FROM pull_requests pr
+		JOIN statuses s ON pr.status_id = s.id
+		WHERE pr.id = $1
+	`, id).Scan(&pr.Id, &pr.Title, &pr.AuthorId, &pr.Status, &pr.NeedMoreReviewers)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrPRNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	rows, err := tx.Query(ctx, `
+		SELECT user_id FROM pull_requests_users WHERE pr_id = $1
+	`, id)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	defer rows.Close()
+
+	var reviewers []string
+	for rows.Next() {
+		var reviewerId string
+		if err := rows.Scan(&reviewerId); err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+		reviewers = append(reviewers, reviewerId)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	pr.Reviewers = reviewers
+
+	err = tx.QueryRow(ctx, `
+		SELECT merged_at FROM pull_requests WHERE id = $1
+	`, id).Scan(&pr.MergedAt)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return &pr, nil
 }
