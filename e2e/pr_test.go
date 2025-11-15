@@ -183,7 +183,7 @@ func TestMergePR(t *testing.T) {
 	err := json.Unmarshal(data, &res1)
 	require.NoError(t, err)
 	require.Equal(t, 200, code)
-	require.Equal(t, res1.PR.PullRequestShort.Status, models.StatusMerged)
+	require.Equal(t, res1.PR.Status, models.StatusMerged)
 
 	// проверка идемпотентности
 	data, code = mergePR(t, st, mergeReq)
@@ -193,7 +193,7 @@ func TestMergePR(t *testing.T) {
 	err = json.Unmarshal(data, &res2)
 	require.NoError(t, err)
 	require.Equal(t, 200, code)
-	require.Equal(t, res2.PR.PullRequestShort.Status, models.StatusMerged)
+	require.Equal(t, res2.PR.Status, models.StatusMerged)
 	require.Equal(t, res1.PR.MergedAt, res2.PR.MergedAt)
 
 	// проверка, что MERGED нельзя переназначить
@@ -258,7 +258,7 @@ func TestStatistics(t *testing.T) {
 			err := json.Unmarshal(data, &res)
 			require.NoError(t, err)
 			require.Equal(t, 200, code)
-			require.Equal(t, res.PR.PullRequestShort.Status, models.StatusMerged)
+			require.Equal(t, res.PR.Status, models.StatusMerged)
 		}
 	}
 

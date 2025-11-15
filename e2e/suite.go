@@ -25,7 +25,10 @@ func NewSuite() *Suite {
 		Level: slog.LevelWarn,
 	}))
 
-	godotenv.Load(envconfigFilename)
+	err := godotenv.Load(envconfigFilename)
+	if err != nil {
+		panic("error loading test env config: " + err.Error())
+	}
 	cfg := config.MustParseConfig()
 
 	db := postgres.New(cfg.DatabaseConfig)

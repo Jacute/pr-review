@@ -39,6 +39,7 @@ func MustParseConfig() *Config {
 	if err := envconfig.Process("", &cfg); err != nil {
 		panic("error loading env: " + err.Error())
 	}
+	cfg.Env = environment
 
 	return &cfg
 }
