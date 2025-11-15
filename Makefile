@@ -9,6 +9,7 @@ down:
 
 clean:
 	docker compose down -v
+	docker compose -f docker-compose.tests.yml down -v
 
 install-swag:
 	go install github.com/swaggo/swag/cmd/swag@latest
@@ -21,6 +22,7 @@ swagger:
   -o ./docs
 
 run-e2e-tests:
+	$(MAKE) clean
 	docker compose -f docker-compose.tests.yml up -d --build db
 	until [ "`docker compose -f docker-compose.tests.yml ps -q db | xargs docker inspect -f '{{ .State.Health.Status }}'`" = "healthy" ]; do \
 		echo "Waiting for DB..."; sleep 1; \
@@ -29,6 +31,7 @@ run-e2e-tests:
 	docker compose -f docker-compose.tests.yml down -v
 
 coverage:
+	$(MAKE) clean
 	docker compose -f docker-compose.tests.yml up -d --build db
 	until [ "`docker compose -f docker-compose.tests.yml ps -q db | xargs docker inspect -f '{{ .State.Health.Status }}'`" = "healthy" ]; do \
 		echo "Waiting for DB..."; sleep 1; \

@@ -45,6 +45,11 @@ func (h *Handlers) AddTeam() http.HandlerFunc {
 				render.JSON(w, r, dto.Error(dto.ErrCodeTeamExists, err.Error()))
 				return
 			}
+			if errors.Is(err, usecases.ErrUserExists) {
+				w.WriteHeader(http.StatusBadRequest)
+				render.JSON(w, r, dto.Error(dto.ErrCodeUserExists, err.Error()))
+				return
+			}
 			w.WriteHeader(http.StatusInternalServerError)
 			render.JSON(w, r, dto.ErrInternal)
 			return

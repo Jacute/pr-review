@@ -8,7 +8,6 @@ import (
 	"pr-review/internal/models"
 	"pr-review/internal/repository/postgres"
 	"pr-review/internal/utils"
-	"slices"
 
 	"github.com/google/uuid"
 )
@@ -93,7 +92,7 @@ func (uc *Usecases) CreateTeam(ctx context.Context, reqDTO *dto.AddTeamRequest) 
 	if err != nil {
 		if errors.Is(err, postgres.ErrUserExists) {
 			log.Warn("one of users with this username already exists")
-			return ErrUserExists
+			return err
 		}
 		log.Error("error adding team members", slog.String("error", err.Error()))
 		return err
@@ -117,7 +116,7 @@ func (uc *Usecases) CreateTeam(ctx context.Context, reqDTO *dto.AddTeamRequest) 
 				log.Error("error updating user team", slog.String("error", err.Error()))
 				return err
 			}
-			delMember(members, member.Id)
+			members = delMember(members, member.Id)
 
 			// перемешаем members, чтобы назначать assignee в случайном порядке
 			utils.Shuffle(members)
@@ -146,12 +145,13 @@ func (uc *Usecases) CreateTeam(ctx context.Context, reqDTO *dto.AddTeamRequest) 
 }
 
 func delMember(members []*models.Member, memberId string) []*models.Member {
+	filteredMembers := make([]*models.Member, 0)
 	for i := range members {
-		if members[i].Id == memberId {
-			return slices.Delete(members, i, i+1)
+		if members[i].Id != memberId {
+			filteredMembers = append(filteredMembers, members[i])
 		}
 	}
-	return members
+	return filteredMembers
 }
 
 func onlyActiveMembers(members []*models.Member) []*models.Member {

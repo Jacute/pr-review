@@ -13,7 +13,7 @@ import (
 
 var (
 	ErrUserNotFound = errors.New("user not found")
-	ErrUserExists   = errors.New("one or more users with this usernames already exists")
+	ErrUserExists   = errors.New("user exists with username")
 )
 
 func (s *Storage) GetTeamMembers(ctx context.Context, name string) ([]*models.Member, error) {
@@ -66,7 +66,7 @@ func (s *Storage) AddOrUpdateTeamMembers(ctx context.Context, tx pgx.Tx, teamId 
 		}
 		if err != nil {
 			if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
-				return fmt.Errorf("%s: %w", op, ErrUserExists)
+				return fmt.Errorf("%w %s", ErrUserExists, member.Username)
 			}
 			return fmt.Errorf("%s: %w", op, err)
 		}

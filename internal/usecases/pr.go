@@ -212,7 +212,7 @@ func (uc *Usecases) ReassignPR(ctx context.Context, reqDTO *dto.ReassignPRReques
 	}
 	log.Debug("members got successfully", slog.Int("members_count", len(members)))
 
-	delMember(members, reqDTO.OldReviewerID)
+	members = delMember(members, reqDTO.OldReviewerID)
 	members = onlyActiveMembers(members)
 	utils.Shuffle(members)
 

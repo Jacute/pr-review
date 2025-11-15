@@ -104,7 +104,7 @@ func (h *Handlers) MergePR() http.HandlerFunc {
 			return
 		}
 
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(http.StatusOK)
 		render.JSON(w, r, dto.MergePRResponse{
 			PR: pr,
 		})
@@ -143,6 +143,11 @@ func (h *Handlers) ReassignPR() http.HandlerFunc {
 			if errors.Is(err, usecases.ErrPRNotFound) || errors.Is(err, usecases.ErrUserNotFound) {
 				w.WriteHeader(http.StatusBadRequest)
 				render.JSON(w, r, dto.Error(dto.ErrCodeNotFound, err.Error()))
+				return
+			}
+			if errors.Is(err, usecases.ErrNoCandidatesToAssign) {
+				w.WriteHeader(http.StatusConflict)
+				render.JSON(w, r, dto.Error(dto.ErrCodeNoCandidates, err.Error()))
 				return
 			}
 			w.WriteHeader(http.StatusInternalServerError)

@@ -38,7 +38,8 @@ var (
 )
 
 var (
-	ErrCodePRExists ErrorCode = "PR_EXISTS"
+	ErrCodePRExists     ErrorCode = "PR_EXISTS"
+	ErrCodeNoCandidates ErrorCode = "NO_CANDIDATES"
 )
 
 type CreatePRRequest struct {

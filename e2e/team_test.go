@@ -3,14 +3,11 @@ package e2e
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"pr-review/internal/http/dto"
 	"testing"
 
-	"github.com/brianvoe/gofakeit"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -192,39 +189,16 @@ func TestAddTeamWithExistingName(t *testing.T) {
 	}`, res.Body.String())
 }
 
-func createPR(t *testing.T, st *Suite) (*dto.CreatePRResponse, int, string, string) {
-	id := uuid.NewString()
-	name := gofakeit.City()
-	body := []byte(fmt.Sprintf(`{
-		"pull_request_id": "%s",
-		"pull_request_name": "%s",
-		"author_id": "86a83214-a5d1-4e8c-93a2-e5bdc206d951"
-	}`, id, name))
-	req := httptest.NewRequestWithContext(t.Context(), "POST", "/pullRequest/create", bytes.NewBuffer(body))
-	req.Header.Set("Content-Type", "application/json")
-	recorder := httptest.NewRecorder()
-
-	st.srv.TestReq(req, recorder)
-	var resp dto.CreatePRResponse
-	err := json.Unmarshal(recorder.Body.Bytes(), &resp)
+func createTeam(t *testing.T, st *Suite, reqBody *dto.AddTeamRequest) ([]byte, int) {
+	body, err := json.Marshal(reqBody)
 	require.NoError(t, err)
-
-	return &resp, recorder.Result().StatusCode, id, name
-}
-
-func createTeam(t *testing.T, st *Suite, reqBody *dto.AddTeamRequest) (*dto.AddTeamResponse, int) {
-	body, _ := json.Marshal(reqBody)
 	req := httptest.NewRequestWithContext(t.Context(), "POST", "/team/add", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 	recorder := httptest.NewRecorder()
 
 	st.srv.TestReq(req, recorder)
 
-	var res dto.AddTeamResponse
-	err := json.Unmarshal(recorder.Body.Bytes(), &res)
-	require.NoError(t, err)
-
-	return &res, recorder.Result().StatusCode
+	return recorder.Body.Bytes(), recorder.Result().StatusCode
 }
 
 func getTeam(t *testing.T, st *Suite, name string) (*dto.GetTeamResponse, int) {

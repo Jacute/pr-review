@@ -8,6 +8,7 @@ import (
 
 var (
 	ErrCodeTeamExists ErrorCode = "TEAM_EXISTS"
+	ErrCodeUserExists ErrorCode = "USER_EXISTS"
 )
 
 var (

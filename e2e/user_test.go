@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/brianvoe/gofakeit"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,17 +28,17 @@ func TestUnassignPRAfterDeactivateUserByAddTeam(t *testing.T) {
 		Members: []*models.Member{
 			{
 				Id:       "86a832a4-a5d1-4e8c-93a2-e5bdc206d9a3",
-				Username: "Alice1",
+				Username: gofakeit.Name() + uuid.NewString(),
 				IsActive: true,
 			},
 			{
 				Id:       "86a832a4-a5d1-4e8c-93a2-e5bdc206d951",
-				Username: "Bo1b",
+				Username: gofakeit.Name() + uuid.NewString(),
 				IsActive: true,
 			},
 			{
 				Id:       "86a83214-a5d1-4e8c-93a2-e5bdc206d951",
-				Username: "Bo21b",
+				Username: gofakeit.Name() + uuid.NewString(),
 				IsActive: true,
 			},
 		},
@@ -45,7 +46,7 @@ func TestUnassignPRAfterDeactivateUserByAddTeam(t *testing.T) {
 	require.Equal(t, 201, code)
 
 	// 2. Создаём PR. Должно быть два аппрувера - Alice1 и Bo1b
-	response, code, id, name := createPR(t, st)
+	response, code, id, name := createPR(t, st, "86a83214-a5d1-4e8c-93a2-e5bdc206d951")
 	expectedRes2 := dto.CreatePRResponse{
 		PR: &models.PullRequest{
 			PullRequestShort: models.PullRequestShort{
@@ -105,12 +106,12 @@ func TestUnassignPRAfterDeactivateUserByAddTeam(t *testing.T) {
 		Members: []*models.Member{
 			{
 				Id:       "86a832a4-a5d1-4e8c-93a2-e5bdc206d9a3",
-				Username: "Alice1",
+				Username: gofakeit.Name() + uuid.NewString(),
 				IsActive: true,
 			},
 			{
 				Id:       "86a832a4-a5d1-4e8c-93a2-e5bdc206d951",
-				Username: "Bo1b",
+				Username: gofakeit.Name() + uuid.NewString(),
 				IsActive: false,
 			},
 		},
@@ -142,7 +143,7 @@ func TestDeactivateActivateUser(t *testing.T) {
 		Members: []*models.Member{
 			{
 				Id:       "81c8fcaf-e519-4250-8e03-b6b22274c332",
-				Username: gofakeit.City(),
+				Username: gofakeit.Name() + uuid.NewString(),
 				IsActive: true,
 			},
 		},
