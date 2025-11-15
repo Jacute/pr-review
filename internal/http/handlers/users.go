@@ -22,6 +22,7 @@ import (
 // @Tags Users
 func (h *Handlers) UserSetIsActive() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		http.Header.Set(w.Header(), "Content-Type", "application/json")
 		if r.Header.Get("Content-Type") != "application/json" {
 			w.WriteHeader(http.StatusBadRequest)
 			render.JSON(w, r, dto.ErrContentTypeNotJson)
@@ -71,6 +72,7 @@ func (h *Handlers) UserSetIsActive() http.HandlerFunc {
 // @Tags Users
 func (h *Handlers) GetUserReviews() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		http.Header.Set(w.Header(), "Content-Type", "application/json")
 		userId := r.URL.Query().Get("user_id")
 		if userId == "" {
 			w.WriteHeader(http.StatusBadRequest)

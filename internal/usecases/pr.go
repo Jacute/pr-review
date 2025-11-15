@@ -254,3 +254,18 @@ func (uc *Usecases) ReassignPR(ctx context.Context, reqDTO *dto.ReassignPRReques
 
 	return pr, newReviewerId, nil
 }
+
+func (uc *Usecases) GetStatistics(ctx context.Context, reqDTO *dto.StatisticsRequest) (map[string]int, uint64, error) {
+	const op = "usecases.GetStatistics"
+	log := uc.log.With(slog.String("op", op))
+
+	stats, count, err := uc.db.GetStatistics(ctx, reqDTO.Page, reqDTO.Limit)
+	if err != nil {
+		log.Error("error getting statistics", slog.String("error", err.Error()))
+		return nil, 0, err
+	}
+
+	log.Debug("statistics got successfully")
+
+	return stats, count, nil
+}

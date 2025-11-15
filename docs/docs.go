@@ -153,6 +153,51 @@ const docTemplate = `{
                 }
             }
         },
+        "/pullRequest/statistics": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PullRequests"
+                ],
+                "summary": "Получить статистику по количеству PR'ов у авторов",
+                "parameters": [
+                    {
+                        "type": "number",
+                        "description": "Страница",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Лимит на страницу",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.StatisticsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный запрос",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/team/add": {
             "post": {
                 "produces": [
@@ -482,6 +527,20 @@ const docTemplate = `{
             "properties": {
                 "user": {
                     "$ref": "#/definitions/models.User"
+                }
+            }
+        },
+        "dto.StatisticsResponse": {
+            "type": "object",
+            "properties": {
+                "authors_count": {
+                    "type": "integer"
+                },
+                "prs": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
                 }
             }
         },

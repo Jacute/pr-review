@@ -17,6 +17,7 @@ type Handlers interface {
 	GetTeam() http.HandlerFunc
 	AddTeam() http.HandlerFunc
 	UserSetIsActive() http.HandlerFunc
+	Statistics() http.HandlerFunc
 }
 
 type Middlewares interface {

@@ -23,6 +23,7 @@ type Storage interface {
 	UpdatePR(ctx context.Context, tx pgx.Tx, pr *models.PullRequestShort) error
 	GetPRById(ctx context.Context, tx pgx.Tx, id string) (*models.PullRequest, error)
 	MergePR(ctx context.Context, tx pgx.Tx, id string) error
+	GetStatistics(ctx context.Context, page int, limit int) (map[string]int, uint64, error)
 
 	TeamExists(ctx context.Context, name string) (bool, error)
 	CreateTeam(ctx context.Context, tx pgx.Tx, team *models.Team) error

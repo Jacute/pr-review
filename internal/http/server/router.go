@@ -28,6 +28,7 @@ func initRouter(h Handlers, m Middlewares) http.Handler {
 	r.Post("/pullRequest/create", h.CreatePR())
 	r.Post("/pullRequest/merge", h.MergePR())
 	r.Post("/pullRequest/reassign", h.ReassignPR())
+	r.Get("/pullRequest/statistics", h.Statistics())
 
 	r.Get("/swagger/doc.json", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./docs/swagger.json")
