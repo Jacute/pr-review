@@ -2,13 +2,20 @@ package e2e
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"net/http/httptest"
+	"pr-review/internal/http/dto"
 	"testing"
 
+	"github.com/brianvoe/gofakeit"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+// TestAddTeam проверяет создание команды с участниками
 func TestAddTeam(t *testing.T) {
 	st := NewSuite()
 	st.Start()
@@ -17,15 +24,18 @@ func TestAddTeam(t *testing.T) {
 	})
 
 	testcases := []struct {
-		name             string
-		headers          map[string]string
-		body             []byte
-		expectedStatus   int
-		expectedResponse string
+		name                string
+		headers             map[string]string
+		body                []byte
+		teamName            string
+		expectedStatus      int
+		expectedResponse    string
+		expectedGetResponse string
 	}{
 		{
-			name:    "Valid Request",
-			headers: map[string]string{"Content-Type": "application/json"},
+			name:     "Valid Request",
+			headers:  map[string]string{"Content-Type": "application/json"},
+			teamName: "payments",
 			body: []byte(`{
 				"team_name": "payments",
 				"members": [
@@ -58,6 +68,41 @@ func TestAddTeam(t *testing.T) {
 				]
 			}
 			}`,
+			expectedGetResponse: `{
+				"members": [
+					{
+						"user_id": "86a832a4-a5d1-4e8c-93a2-e5bdc206d9ad",
+						"username": "Alice",
+						"is_active": true
+					},
+					{
+						"user_id": "86a832a4-a5d1-4e8c-93a2-e5bdc206d9a1",
+						"username": "Bob",
+						"is_active": true
+					}
+				],
+				"team_name": "payments"
+			}`,
+			expectedStatus: 201,
+		},
+		{
+			name:     "enpty team",
+			headers:  map[string]string{"Content-Type": "application/json"},
+			teamName: "paymentsasd",
+			body: []byte(`{
+				"team_name": "paymentsasd",
+				"members": []
+			}`),
+			expectedResponse: `{
+			"team": {
+				"team_name": "paymentsasd",
+				"members": []
+			}
+			}`,
+			expectedGetResponse: `{
+				"team_name": "paymentsasd",
+				"members": []
+			}`,
 			expectedStatus: 201,
 		},
 	}
@@ -74,10 +119,18 @@ func TestAddTeam(t *testing.T) {
 
 			assert.Equal(t, tc.expectedStatus, res.Result().StatusCode)
 			require.JSONEq(t, tc.expectedResponse, res.Body.String())
+
+			req = httptest.NewRequestWithContext(t.Context(), "GET", "/team/get?team_name="+tc.teamName, nil)
+			res = httptest.NewRecorder()
+			st.srv.TestReq(req, res)
+			assert.Equal(t, http.StatusOK, res.Result().StatusCode)
+			require.JSONEq(t, tc.expectedGetResponse, res.Body.String())
 		})
 	}
 }
 
+// TestAddTeamWithExistingName проверяет, что при попытке создать команду с уже существующим именем
+// возвращается ошибка с кодом 400 и соответствующим сообщением.
 func TestAddTeamWithExistingName(t *testing.T) {
 	st := NewSuite()
 	st.Start()
@@ -139,76 +192,50 @@ func TestAddTeamWithExistingName(t *testing.T) {
 	}`, res.Body.String())
 }
 
-func TestUnassignPRAfterUpdateUserByAddTeam(t *testing.T) {
-	st := NewSuite()
-	st.Start()
-	t.Cleanup(func() {
-		st.srv.Stop()
-	})
+func createPR(t *testing.T, st *Suite) (*dto.CreatePRResponse, int, string, string) {
+	id := uuid.NewString()
+	name := gofakeit.City()
+	body := []byte(fmt.Sprintf(`{
+		"pull_request_id": "%s",
+		"pull_request_name": "%s",
+		"author_id": "86a83214-a5d1-4e8c-93a2-e5bdc206d951"
+	}`, id, name))
+	req := httptest.NewRequestWithContext(t.Context(), "POST", "/pullRequest/create", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
 
-	// 1. Создаём команду
-	body := []byte(`{
-		"team_name": "payments123",
-		"members": [
-			{
-				"user_id": "86a832a4-a5d1-4e8c-93a2-e5bdc206d9a3",
-				"username": "Alice1",
-				"is_active": true
-			},
-			{
-				"user_id": "86a832a4-a5d1-4e8c-93a2-e5bdc206d951",
-				"username": "Bo1b",
-				"is_active": true
-			},
-			{
-				"user_id": "86a83214-a5d1-4e8c-93a2-e5bdc206d951",
-				"username": "Bo21b",
-				"is_active": true
-			}
-		]
-	}`)
+	st.srv.TestReq(req, recorder)
+	var resp dto.CreatePRResponse
+	err := json.Unmarshal(recorder.Body.Bytes(), &resp)
+	require.NoError(t, err)
+
+	return &resp, recorder.Result().StatusCode, id, name
+}
+
+func createTeam(t *testing.T, st *Suite, reqBody *dto.AddTeamRequest) (*dto.AddTeamResponse, int) {
+	body, _ := json.Marshal(reqBody)
 	req := httptest.NewRequestWithContext(t.Context(), "POST", "/team/add", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
-	res := httptest.NewRecorder()
+	recorder := httptest.NewRecorder()
 
-	st.srv.TestReq(req, res)
+	st.srv.TestReq(req, recorder)
 
-	require.Equal(t, 201, res.Result().StatusCode)
+	var res dto.AddTeamResponse
+	err := json.Unmarshal(recorder.Body.Bytes(), &res)
+	require.NoError(t, err)
 
-	// 2. Создаём PR
-	body = []byte(`{
-		"pull_request_id": "5df8139e-b302-4851-93fd-4086091347a6",
-		"pull_request_name": "aboba",
-		"author_id": "86a83214-a5d1-4e8c-93a2-e5bdc206d951"
-	}`)
-	req = httptest.NewRequestWithContext(t.Context(), "POST", "/pullRequest/create", bytes.NewBuffer(body))
-	req.Header.Set("Content-Type", "application/json")
-	res = httptest.NewRecorder()
+	return &res, recorder.Result().StatusCode
+}
 
-	st.srv.TestReq(req, res)
+func getTeam(t *testing.T, st *Suite, name string) (*dto.GetTeamResponse, int) {
+	req := httptest.NewRequestWithContext(t.Context(), "GET", "/team/get?team_name="+name, nil)
+	recorder := httptest.NewRecorder()
 
-	require.Equal(t, 201, res.Result().StatusCode)
+	st.srv.TestReq(req, recorder)
 
-	body = []byte(`{
-		"team_name": "payments1234",
-		"members": [
-			{
-				"user_id": "86a832a4-a5d1-4e8c-93a2-e5bdc206d9a3",
-				"username": "Alice1",
-				"is_active": true
-			},
-			{
-				"user_id": "86a832a4-a5d1-4e8c-93a2-e5bdc206d951",
-				"username": "Bo1b",
-				"is_active": true
-			}
-		]
-	}`)
-	req = httptest.NewRequestWithContext(t.Context(), "POST", "/team/add", bytes.NewBuffer(body))
-	req.Header.Set("Content-Type", "application/json")
-	res = httptest.NewRecorder()
+	var res dto.GetTeamResponse
+	err := json.Unmarshal(recorder.Body.Bytes(), &res)
+	require.NoError(t, err)
 
-	st.srv.TestReq(req, res)
-
-	require.Equal(t, 201, res.Result().StatusCode)
+	return &res, recorder.Result().StatusCode
 }

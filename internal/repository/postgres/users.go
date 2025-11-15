@@ -29,7 +29,7 @@ func (s *Storage) GetTeamMembers(ctx context.Context, name string) ([]*models.Me
 	}
 	defer rows.Close()
 
-	var users []*models.Member
+	users := make([]*models.Member, 0)
 	for rows.Next() {
 		var user models.Member
 		if err := rows.Scan(&user.Id, &user.Username, &user.IsActive); err != nil {

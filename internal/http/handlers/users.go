@@ -52,7 +52,7 @@ func (h *Handlers) UserSetIsActive() http.HandlerFunc {
 			return
 		}
 
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(http.StatusOK)
 		render.JSON(w, r, dto.SetIsActiveResponse{
 			User: user,
 		})
@@ -83,7 +83,7 @@ func (h *Handlers) GetUserReviews() http.HandlerFunc {
 			return
 		}
 
-		reviews, err := h.uc.GetReviewers(r.Context(), userId)
+		reviews, err := h.uc.GetPRs(r.Context(), userId)
 		if err != nil {
 			if errors.Is(err, usecases.ErrUserNotFound) {
 				w.WriteHeader(http.StatusNotFound)

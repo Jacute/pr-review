@@ -8,6 +8,7 @@ import (
 	"pr-review/internal/models"
 	"pr-review/internal/repository/postgres"
 	"pr-review/internal/utils"
+	"slices"
 
 	"github.com/google/uuid"
 )
@@ -111,11 +112,12 @@ func (uc *Usecases) CreateTeam(ctx context.Context, reqDTO *dto.AddTeamRequest) 
 		}
 
 		for _, prId := range prIds {
-			members, err := uc.db.GetMembers(ctx, tx, prId, member.Id) // без author_id и oldPrUserId
+			members, err := uc.db.GetMembers(ctx, tx, prId) // без author_id
 			if err != nil {
 				log.Error("error updating user team", slog.String("error", err.Error()))
 				return err
 			}
+			delMember(members, member.Id)
 
 			// перемешаем members, чтобы назначать assignee в случайном порядке
 			utils.Shuffle(members)
@@ -141,4 +143,23 @@ func (uc *Usecases) CreateTeam(ctx context.Context, reqDTO *dto.AddTeamRequest) 
 	}
 
 	return nil
+}
+
+func delMember(members []*models.Member, memberId string) []*models.Member {
+	for i := range members {
+		if members[i].Id == memberId {
+			return slices.Delete(members, i, i+1)
+		}
+	}
+	return members
+}
+
+func onlyActiveMembers(members []*models.Member) []*models.Member {
+	active := make([]*models.Member, 0)
+	for i := 0; i < len(members); i++ {
+		if members[i].IsActive == true {
+			active = append(active, members[i])
+		}
+	}
+	return active
 }

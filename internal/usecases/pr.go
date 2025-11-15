@@ -10,6 +10,8 @@ import (
 	"pr-review/internal/utils"
 )
 
+const nullUUID = "00000000-0000-0000-0000-000000000000"
+
 var (
 	ErrPRNotFound      = errors.New("resource not found")
 	ErrPRAlreadyExists = errors.New("PR id already exists")
@@ -67,13 +69,14 @@ func (uc *Usecases) CreatePR(ctx context.Context, reqDTO *dto.CreatePRRequest) (
 
 	log.Debug("PR created successfully")
 
-	members, err := uc.db.GetMembers(ctx, tx, reqDTO.Id, "")
+	members, err := uc.db.GetMembers(ctx, tx, reqDTO.Id)
 	if err != nil {
 		log.Error("error getting members", slog.String("error", err.Error()))
 		return nil, err
 	}
-	log.Debug("teammates got successfully", slog.Int("teammates_count", len(members)))
+	log.Debug("members got successfully", slog.Int("members_count", len(members)))
 
+	members = onlyActiveMembers(members)
 	utils.Shuffle(members)
 
 	reviewers := make([]string, 0, maxReviewersPerPR)
@@ -100,6 +103,10 @@ func (uc *Usecases) CreatePR(ctx context.Context, reqDTO *dto.CreatePRRequest) (
 	}
 
 	pr, err := uc.db.GetPRById(ctx, tx, reqDTO.Id)
+	if err != nil {
+		log.Error("error getting PR", slog.String("error", err.Error()))
+		return nil, err
+	}
 
 	log.Debug("PR created successfully")
 

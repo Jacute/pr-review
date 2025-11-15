@@ -50,35 +50,35 @@ func (s *Storage) UnassignPRsFromUser(ctx context.Context, tx pgx.Tx, userId str
 	return prIDs, nil
 }
 
-// GetMembers возвращает идентификаторы пользователей из команды пользователя oldPRUserId, исключая при этом oldPRUserId и authorId PR'а
-func (s *Storage) GetMembers(ctx context.Context, tx pgx.Tx, prId string, oldPRUserId string) ([]*models.Member, error) {
-	const op = "postgres.AssignPRToUser"
+// GetMembers возвращает идентификаторы пользователей из команды автора PR'а
+func (s *Storage) GetMembers(ctx context.Context, tx pgx.Tx, prId string) ([]*models.Member, error) {
+	const op = "postgres.GetMembers"
 
-	var teamId string
-	err := tx.QueryRow(ctx, `SELECT team_id FROM users WHERE id = $1`, oldPRUserId).Scan(&teamId)
+	var authorId string
+	err := tx.QueryRow(ctx, `SELECT author_id FROM pull_requests WHERE id = $1`, prId).Scan(&authorId)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	var authorId string
-	err = tx.QueryRow(ctx, `SELECT author_id FROM pull_requests WHERE id = $1`, prId).Scan(&authorId)
+	var teamId string
+	err = tx.QueryRow(ctx, `SELECT team_id FROM users WHERE id = $1`, authorId).Scan(&teamId)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	var members []*models.Member
-	rows, err := tx.Query(ctx, `SELECT id, username, is_active FROM users WHERE team_id = $1 AND id != $2 AND id != $3`, teamId, oldPRUserId, authorId)
+	rows, err := tx.Query(ctx, `SELECT id, username, is_active FROM users WHERE team_id = $1 AND id != $2`, teamId, authorId)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var member *models.Member
+		var member models.Member
 		if err := rows.Scan(&member.Id, &member.Username, &member.IsActive); err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
-		members = append(members, member)
+		members = append(members, &member)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -91,22 +91,24 @@ func (s *Storage) GetMembers(ctx context.Context, tx pgx.Tx, prId string, oldPRU
 func (s *Storage) AssignPRToUser(ctx context.Context, tx pgx.Tx, prId string, members []*models.Member) (string, error) {
 	const op = "postgres.AssignPRToUser"
 
-	var id string
 	for _, member := range members {
-		err := tx.QueryRow(ctx, `
-			INSERT INTO pull_requests (pr_id, user_id)
-			VALUES ($1, $2) RETURNING id
-		`, prId, member.Id).Scan(&id)
-		if errors.Is(err, pgx.ErrNoRows) {
-			continue
-		}
+		cmd, err := tx.Exec(ctx, `
+			INSERT INTO pull_requests_users (pr_id, user_id)
+			VALUES ($1, $2)
+			ON CONFLICT DO NOTHING
+		`, prId, member.Id)
 		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				continue // пропускаем, если участник уже зассайнен
+			}
 			return "", fmt.Errorf("%s: %w", op, err)
 		}
-		break
+		if cmd.RowsAffected() == 1 {
+			return member.Id, nil
+		}
 	}
 
-	return id, nil
+	return "", nil
 }
 
 // SetNeedMoreReviewers устанавливает PR'у флаг need_more_reviewers = true
@@ -129,7 +131,7 @@ func (s *Storage) GetPRsByUserId(ctx context.Context, id string) ([]*models.Pull
 	const op = "postgres.GetPRsByUserId"
 
 	rows, err := s.db.Query(ctx, `
-		SELECT pr.id, pr.title, pr.author_id, s.name, pr.need_more_reviewers
+		SELECT pr.id, pr.title, pr.author_id, s.name, pr.need_more_reviewers, pr.merged_at
 		FROM pull_requests_users pru
 		JOIN pull_requests pr ON pru.pr_id = pr.id
 		JOIN statuses s ON pr.status_id = s.id
@@ -141,16 +143,35 @@ func (s *Storage) GetPRsByUserId(ctx context.Context, id string) ([]*models.Pull
 
 	var prs []*models.PullRequest
 	for rows.Next() {
-		var pr *models.PullRequest
+		var pr models.PullRequest
 		if err := rows.Scan(
-			&pr.Id, &pr.Title, &pr.AuthorId, &pr.Status, &pr.NeedMoreReviewers,
+			&pr.Id, &pr.Title, &pr.AuthorId, &pr.Status, &pr.NeedMoreReviewers, &pr.MergedAt,
 		); err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
-		prs = append(prs, pr)
+		prs = append(prs, &pr)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	for _, pr := range prs {
+		rows, err := s.db.Query(ctx, `
+			SELECT user_id FROM pull_requests_users WHERE pr_id = $1
+		`, pr.Id)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+		defer rows.Close()
+		reviewers := make([]string, 0)
+		for rows.Next() {
+			var reviewerId string
+			if err := rows.Scan(&reviewerId); err != nil {
+				return nil, fmt.Errorf("%s: %w", op, err)
+			}
+			reviewers = append(reviewers, reviewerId)
+		}
+		pr.Reviewers = reviewers
 	}
 
 	return prs, nil
@@ -177,7 +198,6 @@ func (s *Storage) UpdatePR(ctx context.Context, tx pgx.Tx, pr *models.PullReques
 	const op = "postgres.UpdatePR"
 
 	values := make(map[string]interface{})
-	values["id"] = pr.Id
 	if pr.Title != "" {
 		values["title"] = pr.Title
 	}
@@ -210,7 +230,7 @@ func (s *Storage) UpdatePR(ctx context.Context, tx pgx.Tx, pr *models.PullReques
 func (s *Storage) MergePR(ctx context.Context, tx pgx.Tx, id string) error {
 	const op = "postgres.MergePR"
 
-	cmd, err := tx.Exec(ctx, "UPDATE pull_requests SET status_id = (SELECT id FROM statuses WHERE name = 'MERGED'), merged_at = NOW()")
+	cmd, err := tx.Exec(ctx, "UPDATE pull_requests SET status_id = (SELECT id FROM statuses WHERE name = 'MERGED'), merged_at = NOW() WHERE id = $1", id)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}

@@ -37,6 +37,6 @@ type PullRequestShort struct {
 
 type PullRequest struct {
 	PullRequestShort
-	Reviewers []string  `json:"assigned_reviewers"`
-	MergedAt  time.Time `json:"merged_at"`
+	Reviewers []string   `json:"assigned_reviewers"`
+	MergedAt  *time.Time `json:"merged_at"`
 }

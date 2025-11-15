@@ -15,6 +15,144 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/pullRequest/create": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PullRequests"
+                ],
+                "summary": "Создать PR и автоматически назначить до 2 ревьюверов из команды автора",
+                "parameters": [
+                    {
+                        "description": "PR",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreatePRRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreatePRResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Автор не найден",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "PR уже существует",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/pullRequest/merge": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PullRequests"
+                ],
+                "summary": "Пометить PR как MERGED (идемпотентная операция)",
+                "parameters": [
+                    {
+                        "description": "PR id",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.MergePRRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "PR в состоянии MERGED",
+                        "schema": {
+                            "$ref": "#/definitions/dto.MergePRResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "PR не найден",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/pullRequest/reassign": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "PullRequests"
+                ],
+                "summary": "Переназначить конкретного ревьювера на другого из его команды",
+                "parameters": [
+                    {
+                        "description": "PR id \u0026 old reviewer id",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ReassignPRRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ReassignPRResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "PR или пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Нет доступных кандидатов",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/team/add": {
             "post": {
                 "produces": [
@@ -221,7 +359,29 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.ErrorResponse": {
+        "dto.CreatePRRequest": {
+            "type": "object",
+            "properties": {
+                "author_id": {
+                    "type": "string"
+                },
+                "pull_request_id": {
+                    "type": "string"
+                },
+                "pull_request_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CreatePRResponse": {
+            "type": "object",
+            "properties": {
+                "pr": {
+                    "$ref": "#/definitions/models.PullRequest"
+                }
+            }
+        },
+        "dto.ErrorField": {
             "type": "object",
             "properties": {
                 "code": {
@@ -229,6 +389,14 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "$ref": "#/definitions/dto.ErrorField"
                 }
             }
         },
@@ -256,6 +424,44 @@ const docTemplate = `{
                     }
                 },
                 "team_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.MergePRRequest": {
+            "type": "object",
+            "properties": {
+                "pull_request_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.MergePRResponse": {
+            "type": "object",
+            "properties": {
+                "pr": {
+                    "$ref": "#/definitions/models.PullRequest"
+                }
+            }
+        },
+        "dto.ReassignPRRequest": {
+            "type": "object",
+            "properties": {
+                "old_reviewer_id": {
+                    "type": "string"
+                },
+                "pull_request_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ReassignPRResponse": {
+            "type": "object",
+            "properties": {
+                "pr": {
+                    "$ref": "#/definitions/models.PullRequest"
+                },
+                "replaced_by": {
                     "type": "string"
                 }
             }
@@ -310,7 +516,16 @@ const docTemplate = `{
         "models.PullRequest": {
             "type": "object",
             "properties": {
+                "assigned_reviewers": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "author_id": {
+                    "type": "string"
+                },
+                "merged_at": {
                     "type": "string"
                 },
                 "pull_request_id": {

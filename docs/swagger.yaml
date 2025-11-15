@@ -13,12 +13,31 @@ definitions:
       team:
         $ref: '#/definitions/dto.Team'
     type: object
-  dto.ErrorResponse:
+  dto.CreatePRRequest:
+    properties:
+      author_id:
+        type: string
+      pull_request_id:
+        type: string
+      pull_request_name:
+        type: string
+    type: object
+  dto.CreatePRResponse:
+    properties:
+      pr:
+        $ref: '#/definitions/models.PullRequest'
+    type: object
+  dto.ErrorField:
     properties:
       code:
         type: string
       message:
         type: string
+    type: object
+  dto.ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/dto.ErrorField'
     type: object
   dto.GetReviewResponse:
     properties:
@@ -36,6 +55,30 @@ definitions:
           $ref: '#/definitions/models.Member'
         type: array
       team_name:
+        type: string
+    type: object
+  dto.MergePRRequest:
+    properties:
+      pull_request_id:
+        type: string
+    type: object
+  dto.MergePRResponse:
+    properties:
+      pr:
+        $ref: '#/definitions/models.PullRequest'
+    type: object
+  dto.ReassignPRRequest:
+    properties:
+      old_reviewer_id:
+        type: string
+      pull_request_id:
+        type: string
+    type: object
+  dto.ReassignPRResponse:
+    properties:
+      pr:
+        $ref: '#/definitions/models.PullRequest'
+      replaced_by:
         type: string
     type: object
   dto.SetIsActiveRequest:
@@ -70,7 +113,13 @@ definitions:
     type: object
   models.PullRequest:
     properties:
+      assigned_reviewers:
+        items:
+          type: string
+        type: array
       author_id:
+        type: string
+      merged_at:
         type: string
       pull_request_id:
         type: string
@@ -93,6 +142,95 @@ definitions:
 info:
   contact: {}
 paths:
+  /pullRequest/create:
+    post:
+      parameters:
+      - description: PR
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreatePRRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.CreatePRResponse'
+        "404":
+          description: Автор не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: PR уже существует
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Создать PR и автоматически назначить до 2 ревьюверов из команды автора
+      tags:
+      - PullRequests
+  /pullRequest/merge:
+    post:
+      parameters:
+      - description: PR id
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.MergePRRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: PR в состоянии MERGED
+          schema:
+            $ref: '#/definitions/dto.MergePRResponse'
+        "404":
+          description: PR не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Пометить PR как MERGED (идемпотентная операция)
+      tags:
+      - PullRequests
+  /pullRequest/reassign:
+    post:
+      parameters:
+      - description: PR id & old reviewer id
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ReassignPRRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ReassignPRResponse'
+        "404":
+          description: PR или пользователь не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Нет доступных кандидатов
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Переназначить конкретного ревьювера на другого из его команды
+      tags:
+      - PullRequests
   /team/add:
     post:
       parameters:
