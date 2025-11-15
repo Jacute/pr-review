@@ -12,6 +12,7 @@ import (
 
 	"github.com/brianvoe/gofakeit"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -210,6 +211,71 @@ func TestMergePR(t *testing.T) {
 	require.Equal(t, usecases.ErrPRMerged.Error(), res.Error.Message)
 }
 
+func TestStatistics(t *testing.T) {
+	st := NewSuite()
+	st.Start()
+	t.Cleanup(func() {
+		st.srv.Stop()
+	})
+	err := st.db.DeleteUsers(t.Context())
+	assert.NoError(t, err)
+
+	members := []*models.Member{
+		{
+			Id:       "16a832a4-a5d1-4e8c-9000-e5bdc206d9a3",
+			Username: gofakeit.Name() + uuid.NewString(),
+			IsActive: true,
+		},
+		{
+			Id:       "26a832a4-a5d1-4e8c-9002-e5bdc206d951",
+			Username: gofakeit.Name() + uuid.NewString(),
+			IsActive: true,
+		},
+		{
+			Id:       "36a83214-a5d1-4e8c-90a2-e5bdc206d951",
+			Username: gofakeit.Name() + uuid.NewString(),
+			IsActive: true,
+		},
+	}
+	createTeam(t, st, &dto.AddTeamRequest{
+		Name:    gofakeit.Name() + uuid.NewString(),
+		Members: members,
+	})
+
+	for _, member := range members {
+		for i := 0; i < 3; i++ {
+			response, code, prId, _ := createPR(t, st, member.Id)
+			require.Equal(t, 201, code)
+			require.Len(t, response.PR.Reviewers, 2)
+
+			mergeReq := &dto.MergePRRequest{
+				PullRequestID: prId,
+			}
+			data, code := mergePR(t, st, mergeReq)
+			require.Equal(t, 200, code)
+
+			var res dto.MergePRResponse
+			err := json.Unmarshal(data, &res)
+			require.NoError(t, err)
+			require.Equal(t, 200, code)
+			require.Equal(t, res.PR.PullRequestShort.Status, models.StatusMerged)
+		}
+	}
+
+	body, code := statistics(t, st)
+	var resp dto.StatisticsResponse
+	err = json.Unmarshal(body, &resp)
+	require.NoError(t, err)
+	require.Equal(t, 200, code)
+	require.Equal(t, uint64(3), resp.Count)
+
+	s := 0
+	for _, v := range resp.Statistics {
+		s += v
+	}
+	require.Equal(t, 9, s)
+}
+
 func createPR(t *testing.T, st *Suite, authorId string) (*dto.CreatePRResponse, int, string, string) {
 	id := uuid.NewString()
 	name := gofakeit.City()
@@ -251,6 +317,15 @@ func mergePR(t *testing.T, st *Suite, reqBody *dto.MergePRRequest) ([]byte, int)
 	require.NoError(t, err)
 	req := httptest.NewRequestWithContext(t.Context(), "POST", "/pullRequest/merge", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
+	recorder := httptest.NewRecorder()
+
+	st.srv.TestReq(req, recorder)
+
+	return recorder.Body.Bytes(), recorder.Result().StatusCode
+}
+
+func statistics(t *testing.T, st *Suite) ([]byte, int) {
+	req := httptest.NewRequestWithContext(t.Context(), "GET", "/pullRequest/statistics", nil)
 	recorder := httptest.NewRecorder()
 
 	st.srv.TestReq(req, recorder)
