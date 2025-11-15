@@ -50,7 +50,7 @@ func (s *Storage) UnassignPRsFromUser(ctx context.Context, tx pgx.Tx, userId str
 	return prIDs, nil
 }
 
-// GetMembers возвращает идентификаторы пользователей из команды автора PR'а
+// GetMembers возвращает идентификаторы пользователей из команды автора PR'а, кроме самого автора
 func (s *Storage) GetMembers(ctx context.Context, tx pgx.Tx, prId string) ([]*models.Member, error) {
 	const op = "postgres.GetMembers"
 
@@ -290,4 +290,22 @@ func (s *Storage) GetPRById(ctx context.Context, tx pgx.Tx, id string) (*models.
 	}
 
 	return &pr, nil
+}
+
+func (s *Storage) UnassignPRFromUser(ctx context.Context, tx pgx.Tx, prId string, userId string) error {
+	const op = "postgres.UnassignPRFromUser"
+
+	cmd, err := tx.Exec(ctx, `
+		DELETE FROM pull_requests_users
+		WHERE pr_id = $1 AND user_id = $2
+	`, prId, userId)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	if cmd.RowsAffected() == 0 {
+		return fmt.Errorf("%s: %w", op, ErrPRNotFound)
+	}
+
+	return nil
 }
