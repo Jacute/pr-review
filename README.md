@@ -1,4 +1,16 @@
-# pr-review
+<h1 align="center">
+  <strong>pr-review</strong>
+</h1>
+<p align="center">
+  <a href="#быстрый-старт">Быстрый старт</a> •
+  <a href="#вопросы">Вопросы</a> •
+  <a href="#дополнительные-задания">Дополнительные задания</a>
+</p>
+<p align="center">
+  <a href="https://github.com/Jacute/pr-review/actions"><img src="https://github.com/Jacute/pr-review/actions/workflows/tests.yml/badge.svg" alt="CI Status"></a>
+  <a href="https://codecov.io/gh/Jacute/pr-review"><img alt="Codecov" src="https://codecov.io/gh/Jacute/pr-review/branch/master/graph/badge.svg"></a>
+  <a href='https://badge.coveralls.io/github/Jacute/pr-review?branch=master'><img src='https://badge.coveralls.io/repos/github/Jacute/pr-review/badge.svg?branch=master' alt='Coverage Status' /></a>
+</p>
 
 Сервис для назначения ревьюверов на PR.
 
@@ -98,4 +110,5 @@ make up
 ## Дополнительные задания
 
 1. Добавлены [e2e тесты](./e2e/)
-2. Добавил валидацию в большинстве полей: стандартные проверки на пустые поля, длину, соответствие формату UUID и т.п.
+2. Добавлен [ci](./.github/workflows/tests.yml) для запуска тестов 
+3. Добавил валидацию в большинстве полей: стандартные проверки на пустые поля, длину, соответствие формату UUID и т.п.
