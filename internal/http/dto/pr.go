@@ -38,8 +38,10 @@ var (
 )
 
 var (
-	ErrCodePRExists     ErrorCode = "PR_EXISTS"
-	ErrCodeNoCandidates ErrorCode = "NO_CANDIDATES"
+	ErrCodePRExists               ErrorCode = "PR_EXISTS"
+	ErrCodeNoCandidates           ErrorCode = "NO_CANDIDATES"
+	ErrCodeCannotReassignMergedPR ErrorCode = "PR_MERGED"
+	ErrCodeUserNotReviewerOfPR    ErrorCode = "NOT_ASSIGNED"
 )
 
 type CreatePRRequest struct {

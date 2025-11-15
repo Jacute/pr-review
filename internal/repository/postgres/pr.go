@@ -309,3 +309,18 @@ func (s *Storage) UnassignPRFromUser(ctx context.Context, tx pgx.Tx, prId string
 
 	return nil
 }
+
+func (s *Storage) UserIsReviewerOfPR(ctx context.Context, tx pgx.Tx, prId string, userId string) (bool, error) {
+	const op = "postgres.UserIsReviewerOfPR"
+
+	var count int
+	err := tx.QueryRow(ctx, `
+		SELECT COUNT(*) FROM pull_requests_users
+		WHERE pr_id = $1 AND user_id = $2
+	`, prId, userId).Scan(&count)
+	if err != nil {
+		return false, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return count > 0, nil
+}

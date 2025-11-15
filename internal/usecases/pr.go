@@ -16,6 +16,8 @@ var (
 	ErrPRNotFound           = errors.New("resource not found")
 	ErrPRAlreadyExists      = errors.New("PR id already exists")
 	ErrNoCandidatesToAssign = errors.New("no active replacement candidate in team")
+	ErrPRMerged             = errors.New("cannot reassign on merged PR")
+	ErrUserNotReviewerOfPR  = errors.New("reviewer is not assigned to this PR")
 )
 
 const maxReviewersPerPR = 2
@@ -188,10 +190,25 @@ func (uc *Usecases) ReassignPR(ctx context.Context, reqDTO *dto.ReassignPRReques
 		}
 	}()
 
+	exists, err := uc.db.UserIsReviewerOfPR(ctx, tx, reqDTO.PullRequestID, reqDTO.OldReviewerID)
+	if err != nil {
+		log.Error("error checking if user is reviewer of PR", slog.String("error", err.Error()))
+		return nil, "", err
+	}
+	if !exists {
+		log.Warn("user is not a reviewer of the PR")
+		return nil, "", ErrUserNotReviewerOfPR
+	}
+
 	pr, err := uc.db.GetPRById(ctx, tx, reqDTO.PullRequestID)
 	if err != nil {
 		log.Error("error getting PR by id", slog.String("error", err.Error()))
 		return nil, "", err
+	}
+
+	if pr.Status == models.StatusMerged {
+		log.Warn("cannot reassign merged PR")
+		return nil, "", ErrPRMerged
 	}
 
 	err = uc.db.UnassignPRFromUser(ctx, tx, reqDTO.PullRequestID, reqDTO.OldReviewerID)

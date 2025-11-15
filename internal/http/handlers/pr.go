@@ -150,6 +150,16 @@ func (h *Handlers) ReassignPR() http.HandlerFunc {
 				render.JSON(w, r, dto.Error(dto.ErrCodeNoCandidates, err.Error()))
 				return
 			}
+			if errors.Is(err, usecases.ErrPRMerged) {
+				w.WriteHeader(http.StatusConflict)
+				render.JSON(w, r, dto.Error(dto.ErrCodeCannotReassignMergedPR, err.Error()))
+				return
+			}
+			if errors.Is(err, usecases.ErrUserNotReviewerOfPR) {
+				w.WriteHeader(http.StatusConflict)
+				render.JSON(w, r, dto.Error(dto.ErrCodeUserNotReviewerOfPR, err.Error()))
+				return
+			}
 			w.WriteHeader(http.StatusInternalServerError)
 			render.JSON(w, r, dto.ErrInternal)
 			return

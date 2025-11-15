@@ -15,6 +15,7 @@ type Storage interface {
 	UnassignPRsFromUser(ctx context.Context, tx pgx.Tx, userId string) ([]string, error)
 	UnassignPRFromUser(ctx context.Context, tx pgx.Tx, prId string, userId string) error
 	GetMembers(ctx context.Context, tx pgx.Tx, prId string) ([]*models.Member, error)
+	UserIsReviewerOfPR(ctx context.Context, tx pgx.Tx, prId string, userId string) (bool, error)
 	AssignPRToUser(ctx context.Context, tx pgx.Tx, prId string, members []*models.Member) (string, error)
 	SetNeedMoreReviewers(ctx context.Context, tx pgx.Tx, prId string) error
 	GetPRsByUserId(ctx context.Context, id string) ([]*models.PullRequest, error)

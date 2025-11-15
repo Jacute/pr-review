@@ -125,6 +125,18 @@ func TestReassignPRNoCandidates(t *testing.T) {
 	require.Equal(t, 409, code)
 	require.Equal(t, dto.ErrCodeNoCandidates, res.Error.Code)
 	require.Equal(t, usecases.ErrNoCandidatesToAssign.Error(), res.Error.Message)
+
+	// проверка на то, что ревьювер с OldReviewerID не является ревьювером PR
+	data, code = reassignPR(t, st, &dto.ReassignPRRequest{
+		PullRequestID: prId,
+		OldReviewerID: "76a83214-a5d1-4e8c-90a2-e5bdc206d951",
+	})
+	var res2 dto.ErrorResponse
+	err = json.Unmarshal(data, &res2)
+	require.NoError(t, err)
+	require.Equal(t, 409, code)
+	require.Equal(t, dto.ErrCodeUserNotReviewerOfPR, res2.Error.Code)
+	require.Equal(t, usecases.ErrUserNotReviewerOfPR.Error(), res2.Error.Message)
 }
 
 // TestMergePR проверяет успешное смёрдживание PR после ревью одним человеком
@@ -166,11 +178,36 @@ func TestMergePR(t *testing.T) {
 	data, code := mergePR(t, st, mergeReq)
 	require.Equal(t, 200, code)
 
-	var res dto.MergePRResponse
-	err := json.Unmarshal(data, &res)
+	var res1 dto.MergePRResponse
+	err := json.Unmarshal(data, &res1)
 	require.NoError(t, err)
 	require.Equal(t, 200, code)
-	require.Equal(t, res.PR.PullRequestShort.Status, models.StatusMerged)
+	require.Equal(t, res1.PR.PullRequestShort.Status, models.StatusMerged)
+
+	// проверка идемпотентности
+	data, code = mergePR(t, st, mergeReq)
+	require.Equal(t, 200, code)
+
+	var res2 dto.MergePRResponse
+	err = json.Unmarshal(data, &res2)
+	require.NoError(t, err)
+	require.Equal(t, 200, code)
+	require.Equal(t, res2.PR.PullRequestShort.Status, models.StatusMerged)
+	require.Equal(t, res1.PR.MergedAt, res2.PR.MergedAt)
+
+	// проверка, что MERGED нельзя переназначить
+	reassignReq := &dto.ReassignPRRequest{
+		PullRequestID: prId,
+		OldReviewerID: response.PR.Reviewers[0],
+	}
+
+	bytes, code := reassignPR(t, st, reassignReq)
+	var res dto.ErrorResponse
+	err = json.Unmarshal(bytes, &res)
+	require.NoError(t, err)
+	require.Equal(t, 409, code)
+	require.Equal(t, dto.ErrCodeCannotReassignMergedPR, res.Error.Code)
+	require.Equal(t, usecases.ErrPRMerged.Error(), res.Error.Message)
 }
 
 func createPR(t *testing.T, st *Suite, authorId string) (*dto.CreatePRResponse, int, string, string) {
