@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"pr-review/internal/http/dto"
+	"pr-review/internal/repository/postgres"
 	"pr-review/internal/usecases"
 
 	"github.com/go-chi/render"
@@ -45,7 +46,7 @@ func (h *Handlers) AddTeam() http.HandlerFunc {
 				render.JSON(w, r, dto.Error(dto.ErrCodeTeamExists, err.Error()))
 				return
 			}
-			if errors.Is(err, usecases.ErrUserExists) {
+			if errors.Is(err, postgres.ErrUserExists) {
 				w.WriteHeader(http.StatusBadRequest)
 				render.JSON(w, r, dto.Error(dto.ErrCodeUserExists, err.Error()))
 				return
