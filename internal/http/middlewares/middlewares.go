@@ -52,6 +52,7 @@ func (m *Middlewares) RequestLogger() func(next http.Handler) http.Handler {
 
 			t1 := time.Now()
 			defer func() {
+				reqId := middleware.GetReqID(r.Context())
 				log.Info(
 					"request completed",
 					slog.String("method", r.Method),
@@ -59,6 +60,7 @@ func (m *Middlewares) RequestLogger() func(next http.Handler) http.Handler {
 					slog.Int("status", ww.Status()),
 					slog.Int("bytes", ww.BytesWritten()),
 					slog.Duration("time", time.Since(t1)),
+					slog.String("request_id", reqId),
 				)
 			}()
 

@@ -1,8 +1,22 @@
 package handlers
 
-import "log/slog"
+import (
+	"context"
+	"log/slog"
+	"pr-review/internal/http/dto"
+	"pr-review/internal/models"
+)
 
 type Usecases interface {
+	GetTeam(ctx context.Context, name string) ([]*models.Member, error)
+	CreateTeam(ctx context.Context, reqDTO *dto.AddTeamRequest) error
+
+	UserSetIsActive(ctx context.Context, reqDTO *dto.SetIsActiveRequest) (*models.User, error)
+	GetPRs(ctx context.Context, userId string) ([]*models.PullRequest, error)
+
+	CreatePR(ctx context.Context, reqDTO *dto.CreatePRRequest) (*models.PullRequest, error)
+	MergePR(ctx context.Context, prId string) (*models.PullRequest, error)
+	ReassignPR(ctx context.Context, reqDTO *dto.ReassignPRRequest) (*models.PullRequest, string, error)
 }
 
 type Handlers struct {

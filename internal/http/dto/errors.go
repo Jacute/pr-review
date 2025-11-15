@@ -1,15 +1,42 @@
 package dto
 
+var (
+	ErrCodeNotFound   ErrorCode = "NOT_FOUND"
+	ErrCodeBadRequest ErrorCode = "BAD_REQUEST"
+	ErrCodeInternal   ErrorCode = "INTERNAL_ERROR"
+)
+
+var (
+	ErrContentTypeNotJson = Error(
+		ErrCodeBadRequest,
+		"Content-Type must be application/json",
+	)
+	ErrInvalidBody = Error(
+		ErrCodeBadRequest,
+		"invalid body",
+	)
+	ErrInternal = Error(
+		ErrCodeInternal,
+		"internal error",
+	)
+)
+
 type ErrorCode string
 
-type Response struct {
+type ErrorResponse struct {
+	Error *ErrorField `json:"error"`
+}
+
+type ErrorField struct {
 	Message string    `json:"message"`
 	Code    ErrorCode `json:"code"`
 }
 
-func Error(code ErrorCode, msg string) *Response {
-	return &Response{
-		Code:    code,
-		Message: msg,
+func Error(code ErrorCode, msg string) *ErrorResponse {
+	return &ErrorResponse{
+		Error: &ErrorField{
+			Code:    code,
+			Message: msg,
+		},
 	}
 }

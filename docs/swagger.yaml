@@ -1,39 +1,267 @@
-basePath: /
 definitions:
-  dto.GetTeamResponse:
+  dto.AddTeamRequest:
     properties:
       members:
         items:
-          $ref: '#/definitions/dto.Member'
+          $ref: '#/definitions/models.Member'
         type: array
       team_name:
         type: string
     type: object
-  dto.Member:
+  dto.AddTeamResponse:
     properties:
-      is_active:
-        type: boolean
-      user_id:
-        type: integer
-      username:
+      team:
+        $ref: '#/definitions/dto.Team'
+    type: object
+  dto.CreatePRRequest:
+    properties:
+      author_id:
+        type: string
+      pull_request_id:
+        type: string
+      pull_request_name:
         type: string
     type: object
-  dto.Response:
+  dto.CreatePRResponse:
+    properties:
+      pr:
+        $ref: '#/definitions/models.PullRequest'
+    type: object
+  dto.ErrorField:
     properties:
       code:
         type: string
       message:
         type: string
     type: object
-host: localhost:8080
+  dto.ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/dto.ErrorField'
+    type: object
+  dto.GetReviewResponse:
+    properties:
+      pull_requests:
+        items:
+          $ref: '#/definitions/models.PullRequest'
+        type: array
+      user_id:
+        type: string
+    type: object
+  dto.GetTeamResponse:
+    properties:
+      members:
+        items:
+          $ref: '#/definitions/models.Member'
+        type: array
+      team_name:
+        type: string
+    type: object
+  dto.MergePRRequest:
+    properties:
+      pull_request_id:
+        type: string
+    type: object
+  dto.MergePRResponse:
+    properties:
+      pr:
+        $ref: '#/definitions/models.PullRequest'
+    type: object
+  dto.ReassignPRRequest:
+    properties:
+      old_reviewer_id:
+        type: string
+      pull_request_id:
+        type: string
+    type: object
+  dto.ReassignPRResponse:
+    properties:
+      pr:
+        $ref: '#/definitions/models.PullRequest'
+      replaced_by:
+        type: string
+    type: object
+  dto.SetIsActiveRequest:
+    properties:
+      is_active:
+        type: boolean
+      user_id:
+        type: string
+    type: object
+  dto.SetIsActiveResponse:
+    properties:
+      user:
+        $ref: '#/definitions/models.User'
+    type: object
+  dto.Team:
+    properties:
+      members:
+        items:
+          $ref: '#/definitions/models.Member'
+        type: array
+      team_name:
+        type: string
+    type: object
+  models.Member:
+    properties:
+      is_active:
+        type: boolean
+      user_id:
+        type: string
+      username:
+        type: string
+    type: object
+  models.PullRequest:
+    properties:
+      assigned_reviewers:
+        items:
+          type: string
+        type: array
+      author_id:
+        type: string
+      merged_at:
+        type: string
+      pull_request_id:
+        type: string
+      pull_request_name:
+        type: string
+      status:
+        type: string
+    type: object
+  models.User:
+    properties:
+      is_active:
+        type: boolean
+      team_name:
+        type: string
+      user_id:
+        type: string
+      username:
+        type: string
+    type: object
 info:
   contact: {}
-  title: pr-review API Docs
 paths:
+  /pullRequest/create:
+    post:
+      parameters:
+      - description: PR
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreatePRRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.CreatePRResponse'
+        "404":
+          description: Автор не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: PR уже существует
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Создать PR и автоматически назначить до 2 ревьюверов из команды автора
+      tags:
+      - PullRequests
+  /pullRequest/merge:
+    post:
+      parameters:
+      - description: PR id
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.MergePRRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: PR в состоянии MERGED
+          schema:
+            $ref: '#/definitions/dto.MergePRResponse'
+        "404":
+          description: PR не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Пометить PR как MERGED (идемпотентная операция)
+      tags:
+      - PullRequests
+  /pullRequest/reassign:
+    post:
+      parameters:
+      - description: PR id & old reviewer id
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ReassignPRRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ReassignPRResponse'
+        "404":
+          description: PR или пользователь не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "409":
+          description: Нет доступных кандидатов
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Переназначить конкретного ревьювера на другого из его команды
+      tags:
+      - PullRequests
+  /team/add:
+    post:
+      parameters:
+      - description: Команда
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AddTeamRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.AddTeamResponse'
+        "400":
+          description: Неверный запрос или команда с таким team_name уже существует
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Создать команду с участниками (создаёт/обновляет пользователей)
+      tags:
+      - Teams
   /team/get:
     get:
       parameters:
-      - description: "Название команды\t"
+      - description: Название команды
         in: query
         name: team_name
         required: true
@@ -48,16 +276,77 @@ paths:
         "400":
           description: Неверный запрос
           schema:
-            $ref: '#/definitions/dto.Response'
+            $ref: '#/definitions/dto.ErrorResponse'
         "404":
           description: Команда не найдена
           schema:
-            $ref: '#/definitions/dto.Response'
+            $ref: '#/definitions/dto.ErrorResponse'
         "500":
           description: Внутренняя ошибка
           schema:
-            $ref: '#/definitions/dto.Response'
+            $ref: '#/definitions/dto.ErrorResponse'
       summary: Получить команду с участниками
       tags:
       - Teams
+  /users/getReview:
+    get:
+      parameters:
+      - description: Идентификатор пользователя
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.GetReviewResponse'
+        "400":
+          description: Неверный запрос
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Получить PR'ы, где пользователь назначен ревьювером
+      tags:
+      - Users
+  /users/setIsActive:
+    post:
+      parameters:
+      - description: Установка пользователя активным/неактивным
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SetIsActiveRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SetIsActiveResponse'
+        "400":
+          description: Неверный запрос
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Пользователь не найден
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Внутренняя ошибка
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Установить флаг активности пользователя
+      tags:
+      - Users
 swagger: "2.0"
