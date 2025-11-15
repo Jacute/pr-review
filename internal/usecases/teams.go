@@ -157,7 +157,7 @@ func delMember(members []*models.Member, memberId string) []*models.Member {
 func onlyActiveMembers(members []*models.Member) []*models.Member {
 	active := make([]*models.Member, 0)
 	for i := 0; i < len(members); i++ {
-		if members[i].IsActive == true {
+		if members[i].IsActive {
 			active = append(active, members[i])
 		}
 	}

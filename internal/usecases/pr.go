@@ -10,8 +10,6 @@ import (
 	"pr-review/internal/utils"
 )
 
-const nullUUID = "00000000-0000-0000-0000-000000000000"
-
 var (
 	ErrPRNotFound           = errors.New("resource not found")
 	ErrPRAlreadyExists      = errors.New("PR id already exists")
