@@ -1,7 +1,9 @@
 package dto
 
 import (
+	"net/url"
 	"pr-review/internal/models"
+	"strconv"
 
 	"github.com/google/uuid"
 )
@@ -34,6 +36,14 @@ var (
 	ErrOldReviewerIdShouldBeUuid = Error(
 		ErrCodeBadRequest,
 		"old_reviewer_id should be uuid",
+	)
+	ErrPageShouldBePositiveInt = Error(
+		ErrCodeBadRequest,
+		"page should be positive number",
+	)
+	ErrLimitShouldBePositiveInt = Error(
+		ErrCodeBadRequest,
+		"limit should be positive number",
 	)
 )
 
@@ -115,4 +125,39 @@ func (r *ReassignPRRequest) Validate() *ErrorResponse {
 type ReassignPRResponse struct {
 	PR         *models.PullRequest `json:"pr"`
 	ReplacedBy string              `json:"replaced_by"`
+}
+
+type StatisticsRequest struct {
+	Page  int
+	Limit int
+}
+
+type StatisticsResponse struct {
+	Statistics map[string]int `json:"prs"`
+	Count      uint64         `json:"authors_count"`
+}
+
+func MapQueryToStatisticsRequest(query url.Values) (*StatisticsRequest, *ErrorResponse) {
+	pageStr := query.Get("page")
+	limitStr := query.Get("limit")
+
+	var err error
+	var page, limit int
+	if pageStr != "" {
+		page, err = strconv.Atoi(pageStr)
+		if err != nil || page < 0 {
+			return nil, ErrPageShouldBePositiveInt
+		}
+	}
+	if limitStr != "" {
+		limit, err = strconv.Atoi(limitStr)
+		if err != nil || limit < 0 {
+			return nil, ErrLimitShouldBePositiveInt
+		}
+	}
+
+	return &StatisticsRequest{
+		Page:  page,
+		Limit: limit,
+	}, nil
 }

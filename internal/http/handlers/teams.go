@@ -21,6 +21,7 @@ import (
 // @Tags Teams
 func (h *Handlers) AddTeam() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		http.Header.Set(w.Header(), "Content-Type", "application/json")
 		if r.Header.Get("Content-Type") != "application/json" {
 			w.WriteHeader(http.StatusBadRequest)
 			render.JSON(w, r, dto.ErrContentTypeNotJson)
@@ -78,6 +79,7 @@ func (h *Handlers) AddTeam() http.HandlerFunc {
 // @Tags Teams
 func (h *Handlers) GetTeam() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		http.Header.Set(w.Header(), "Content-Type", "application/json")
 		teamName := r.URL.Query().Get("team_name")
 		if teamName == "" {
 			w.WriteHeader(http.StatusBadRequest)

@@ -17,6 +17,7 @@ const envconfigFilename = ".env.test"
 
 type Suite struct {
 	srv *server.HTTPServer
+	db  *postgres.Storage
 }
 
 func NewSuite() *Suite {
@@ -36,6 +37,7 @@ func NewSuite() *Suite {
 
 	return &Suite{
 		srv: srv,
+		db:  db,
 	}
 }
 

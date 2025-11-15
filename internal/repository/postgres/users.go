@@ -108,3 +108,19 @@ func (s *Storage) GetUserById(ctx context.Context, id string) (*models.User, err
 
 	return &user, nil
 }
+
+func (s *Storage) DeleteUsers(ctx context.Context) error {
+	const op = "postgres.DeleteUsers"
+
+	_, err := s.db.Exec(ctx, `DELETE FROM pull_requests_users`)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	_, err = s.db.Exec(ctx, `DELETE FROM users`)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}

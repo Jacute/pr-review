@@ -324,3 +324,55 @@ func (s *Storage) UserIsReviewerOfPR(ctx context.Context, tx pgx.Tx, prId string
 
 	return count > 0, nil
 }
+
+func (s *Storage) GetStatistics(ctx context.Context, page int, limit int) (map[string]int, uint64, error) {
+	const op = "postgres.GetStatistics"
+
+	builder := sq.Select("u.username", "COUNT(*) as pr_count").
+		From("pull_requests pr").
+		Join("users u ON pr.author_id = u.id").
+		GroupBy("u.username").
+		OrderBy("pr_count DESC").
+		PlaceholderFormat(sq.Dollar)
+	if limit != 0 {
+		builder = builder.Limit(uint64(limit))
+	}
+	if page != 0 {
+		builder = builder.Offset(uint64((page - 1) * limit))
+	}
+	sql, args, err := builder.ToSql()
+	if err != nil {
+		return nil, 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	rows, err := s.db.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("%s: %w", op, err)
+	}
+	defer rows.Close()
+
+	statistics := make(map[string]int)
+	for rows.Next() {
+		var username string
+		var prCount int
+		if err := rows.Scan(&username, &prCount); err != nil {
+			return nil, 0, fmt.Errorf("%s: %w", op, err)
+		}
+		statistics[username] = prCount
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	var count uint64
+	err = s.db.QueryRow(ctx, `
+		SELECT COUNT(DISTINCT u.username)
+		FROM pull_requests pr
+		JOIN users u ON pr.author_id = u.id
+	`).Scan(&count)
+	if err != nil {
+		return nil, 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return statistics, count, nil
+}

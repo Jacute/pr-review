@@ -21,6 +21,8 @@ import (
 // @Tags PullRequests
 func (h *Handlers) CreatePR() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		http.Header.Set(w.Header(), "Content-Type", "application/json")
+
 		if r.Header.Get("Content-Type") != "application/json" {
 			w.WriteHeader(http.StatusBadRequest)
 			render.JSON(w, r, dto.ErrContentTypeNotJson)
@@ -74,6 +76,8 @@ func (h *Handlers) CreatePR() http.HandlerFunc {
 // @Tags PullRequests
 func (h *Handlers) MergePR() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		http.Header.Set(w.Header(), "Content-Type", "application/json")
+
 		if r.Header.Get("Content-Type") != "application/json" {
 			w.WriteHeader(http.StatusBadRequest)
 			render.JSON(w, r, dto.ErrContentTypeNotJson)
@@ -125,6 +129,8 @@ func (h *Handlers) MergePR() http.HandlerFunc {
 // @Tags PullRequests
 func (h *Handlers) ReassignPR() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		http.Header.Set(w.Header(), "Content-Type", "application/json")
+
 		if r.Header.Get("Content-Type") != "application/json" {
 			w.WriteHeader(http.StatusBadRequest)
 			render.JSON(w, r, dto.ErrContentTypeNotJson)
@@ -169,6 +175,42 @@ func (h *Handlers) ReassignPR() http.HandlerFunc {
 		render.JSON(w, r, dto.ReassignPRResponse{
 			PR:         pr,
 			ReplacedBy: replacedBy,
+		})
+	}
+}
+
+// Statistics godoc
+// @Summary Получить статистику по количеству PR'ов у авторов
+// @Param page query number false "Страница"
+// @Param limit query number false "Лимит на страницу"
+// @Produce json
+// @Success 200 {object} dto.StatisticsResponse
+// @Failure 400 {object} dto.ErrorResponse "Неверный запрос"
+// @Failure 500 {object} dto.ErrorResponse "Внутренняя ошибка"
+// @Router /pullRequest/statistics [get]
+// @Tags PullRequests
+func (h *Handlers) Statistics() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		http.Header.Set(w.Header(), "Content-Type", "application/json")
+
+		queries := r.URL.Query()
+		reqDTO, errResp := dto.MapQueryToStatisticsRequest(queries)
+		if errResp != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			render.JSON(w, r, errResp)
+			return
+		}
+		stats, count, err := h.uc.GetStatistics(r.Context(), reqDTO)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			render.JSON(w, r, dto.ErrInternal)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		render.JSON(w, r, dto.StatisticsResponse{
+			Statistics: stats,
+			Count:      count,
 		})
 	}
 }
