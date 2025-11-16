@@ -5,8 +5,6 @@ services:
     restart: on-failure
     env_file:
       - deploy/.db.env
-    ports: 
-      - 127.0.0.1:15021:5432
     volumes:
       - ./migrations:/docker-entrypoint-initdb.d
     healthcheck:
